@@ -1,5 +1,6 @@
 # cs410_group1
 Room reservation in university
+Open terminal and run "make run" to compile and run application.
 
 Stakeholders might include:
 - Students
