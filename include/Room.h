@@ -12,28 +12,32 @@ using namespace std;
 
 class Room {
 private:
-    int roomID;
+    string roomID;
     int capacity;
-    int maxCapacity
+    int maxcapacity;
     string location;
     bool available;
 
 public:
+    static const int MAX_CAPACITY = 20;
+    
     // Constructor
     Room();
 
-    Room(int roomID, int capacity, string location, bool available);
+    Room(string roomID, int capacity,int maxcapacity ,string location, bool available);
 
     // Getters
-    int getRoomID() const;
+    string getRoomID() const;
     int getCapacity() const;
-    std::string getLocation() const;
+    int getMaxcapacity() const;
+    string getLocation() const;
     bool isAvailable() const;
 
     // Setters
-    void setRoomID(int roomID);
+    void setRoomID(string roomID);
     void setCapacity(int capacity);
-    void setLocation(std::string location);
+    void setMaxcapacity(int maxcapacity);
+    void setLocation(string location);
     void setAvailable(bool available);
 
     // Display room information

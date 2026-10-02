@@ -3,24 +3,28 @@
 using namespace std;
 
 
+//Room(int roomID, int capacity,int maxCapacity ,string location, bool available);
 // Default constructor
 Room::Room() {
-    roomID = 0;
+    roomID = "";
     capacity = 0;
+    maxcapacity = MAX_CAPACITY;
     location = "";
     available = true;
 }
 
+
 // Constructor with parameters
-Room::Room(int roomID, int capacity, string location, bool available) {
+Room::Room(string roomID, int capacity,int maxcapacity ,string location, bool available) {
     this->roomID = roomID;
     this->capacity = capacity;
+    this->maxcapacity = maxcapacity;
     this->location = location;
     this->available = available;
 }
 
 // Getters
-int Room::getRoomID() const {
+string Room::getRoomID() const {
     return roomID;
 }
 
@@ -28,7 +32,11 @@ int Room::getCapacity() const {
     return capacity;
 }
 
-std::string Room::getLocation() const {
+int Room::getMaxcapacity() const {
+    return maxcapacity;
+}
+
+string Room::getLocation() const {
     return location;
 }
 
@@ -37,12 +45,20 @@ bool Room::isAvailable() const {
 }
 
 // Setters
-void Room::setRoomID(int roomID) {
+void Room::setRoomID(string roomID) {
     this->roomID = roomID;
 }
 
 void Room::setCapacity(int capacity) {
-    this->capacity = capacity;
+    if (capacity >  this->maxcapacity){
+        cout << "capacity is unvalid, please double check" << endl;
+    } else{
+        this->capacity = capacity;
+    }
+}
+void Room::setMaxcapacity(int maxcapacity) {
+    this->maxcapacity = maxcapacity;
+
 }
 
 void Room::setLocation(std::string location) {
@@ -55,9 +71,10 @@ void Room::setAvailable(bool available) {
 
 // Display room information
 void Room::displayRoom() const {
-    cout << "Room ID: " << roomID << std::endl;
-    cout << "Capacity: " << capacity << std::endl;
-    cout << "Location: " << location << std::endl;
+    cout << "Room ID: " << roomID << endl;
+    cout << "Capacity: " << capacity << endl;
+    cout << "Max capacity: " << maxcapacity << endl;
+    cout << "Location: " << location << endl;
     cout << "Available: "
-         << (available ? "Yes" : "No") << std::endl;
+         << (available ? "Yes" : "No") << endl;
 }

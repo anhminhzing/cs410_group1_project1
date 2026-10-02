@@ -8,7 +8,7 @@
 using namespace std;
 
 int main() {
-    Room room1(201, 6, "Campus Center", true);
+    Room room1("W-100-003", 6, 20 ,"Campus Center", true);
     room1.displayRoom();
     return 0;
 }
