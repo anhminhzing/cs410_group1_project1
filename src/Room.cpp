@@ -50,7 +50,7 @@ void Room::setRoomID(string roomID) {
 }
 
 void Room::setCapacity(int capacity) {
-    if (capacity >  this->maxcapacity){
+    if (capacity < 1 || capacity >  this->maxcapacity){
         cout << "capacity is unvalid, please double check" << endl;
     } else{
         this->capacity = capacity;
