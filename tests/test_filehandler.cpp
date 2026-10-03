@@ -2,8 +2,8 @@
 #include <iostream>
 #include <vector>
 
-#include "Room.h"
-#include "FileHandler.h"
+#include "../include/Room.h"
+#include "../include/FileHandler.h"
 
 int main() {
     std::vector<Room> rooms =
