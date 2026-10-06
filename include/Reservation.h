@@ -10,6 +10,8 @@
 
 #include <string>
 #include <chrono>
+
+#include "Room.h"
 using namespace std;
 
 enum class ReservationStatus {
@@ -22,7 +24,7 @@ enum class ReservationStatus {
 class Reservation {
 private:
     string ownerID;
-    string roomID;
+    Room room;
     string reservationID;
     std::chrono::time_point<std::chrono::system_clock> startTime;
     std::chrono::time_point<std::chrono::system_clock> endTime;
@@ -31,11 +33,11 @@ private:
     
 
 public:
-    Reservation(const string &ownerID, const string &roomID, const string &reservationID, std::chrono::time_point<std::chrono::system_clock> startTime, std::chrono::time_point<std::chrono::system_clock> endTime);
+    Reservation(const string &ownerID, const Room &room, const string &reservationID, std::chrono::time_point<std::chrono::system_clock> startTime, std::chrono::time_point<std::chrono::system_clock> endTime);
 
     // get
     string getOwnerID() const;
-    string getRoomID() const;
+    Room getRoom() const;
     string getReservationID() const;
     std::chrono::time_point<std::chrono::system_clock> getStartTime() const;
     std::chrono::time_point<std::chrono::system_clock> getEndTime() const;
