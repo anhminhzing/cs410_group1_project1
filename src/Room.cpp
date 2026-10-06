@@ -102,3 +102,7 @@ void Room::displayRoom() const {
     cout << "Available: "
          << (available ? "Yes" : "No") << endl;
 }
+
+bool Room::canAccommodate(int requestedCapacity) const {
+    return  1 <= requestedCapacity && requestedCapacity <= maxcapacity;
+}

@@ -53,6 +53,9 @@ public:
     // Display room information
     string getTypeString() const;
     void displayRoom() const;
+
+    // Room capacity
+    bool canAccommodate(int requestedCapacity) const;
 };
 
 #endif
