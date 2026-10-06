@@ -5,8 +5,10 @@
 #include "../include/Room.h"
 #include "../include/FileHandler.h"
 
+using namespace std;
+
 int main() {
-    std::vector<Room> rooms =
+    vector<Room> rooms =
         FileHandler::loadRooms("data/rooms.txt");
 
     // Check number of rooms
@@ -14,6 +16,7 @@ int main() {
 
     // Check first room
     assert(rooms[0].getRoomID() == "R101");
+    assert(rooms[0].getTypeString() == "Classroom");
     assert(rooms[0].getCapacity() == 10);
     assert(rooms[0].getMaxcapacity() == 30);
     assert(rooms[0].getLocation() == "Library");
@@ -21,16 +24,18 @@ int main() {
 
     // Check second room
     assert(rooms[1].getRoomID() == "R102");
+    assert(rooms[1].getTypeString() == "Study room");
     assert(rooms[1].getCapacity() == 20);
     assert(rooms[1].getMaxcapacity() == 40);
 
     // Check third room
     assert(rooms[2].getRoomID() == "R103");
+    assert(rooms[2].getTypeString() == "Meeting room");
     assert(rooms[2].getCapacity() == 8);
     assert(rooms[2].getMaxcapacity() == 20);
     assert(rooms[2].isAvailable() == false);
 
-    std::cout << "All FileHandler tests passed!" << std::endl;
+    cout << "All FileHandler tests passed!" << endl;
 
     return 0;
 }

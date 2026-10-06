@@ -10,9 +10,16 @@
 #include <string>
 using namespace std;
 
+enum class RoomType {
+    CLASSROOM,
+    MEETING_ROOM,
+    STUDY_ROOM,
+};
+
 class Room {
 private:
     string roomID;
+    RoomType type;
     int capacity;
     int maxcapacity;
     string location;
@@ -24,10 +31,12 @@ public:
     // Constructor
     Room();
 
-    Room(string roomID, int capacity,int maxcapacity ,string location, bool available);
+    Room(string roomID, RoomType type,
+         int capacity,int maxcapacity ,string location, bool available);
 
     // Getters
     string getRoomID() const;
+    RoomType getType() const;
     int getCapacity() const;
     int getMaxcapacity() const;
     string getLocation() const;
@@ -35,12 +44,14 @@ public:
 
     // Setters
     void setRoomID(string roomID);
+    void setType(RoomType type);
     void setCapacity(int capacity);
     void setMaxcapacity(int maxcapacity);
     void setLocation(string location);
     void setAvailable(bool available);
 
     // Display room information
+    string getTypeString() const;
     void displayRoom() const;
 };
 

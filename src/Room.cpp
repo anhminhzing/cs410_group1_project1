@@ -8,15 +8,18 @@ using namespace std;
 Room::Room() {
     roomID = "";
     capacity = 0;
+    type = RoomType::CLASSROOM;
     maxcapacity = MAX_CAPACITY;
     location = "";
     available = true;
+    
 }
 
 
 // Constructor with parameters
-Room::Room(string roomID, int capacity,int maxcapacity ,string location, bool available) {
+Room::Room(string roomID, RoomType type ,int capacity,int maxcapacity ,string location, bool available) {
     this->roomID = roomID;
+    this->type = type;
     this->capacity = capacity;
     this->maxcapacity = maxcapacity;
     this->location = location;
@@ -26,6 +29,26 @@ Room::Room(string roomID, int capacity,int maxcapacity ,string location, bool av
 // Getters
 string Room::getRoomID() const {
     return roomID;
+}
+
+RoomType Room::getType() const {
+    return type;
+}
+
+string Room::getTypeString() const {
+    switch (type) {
+        case RoomType::CLASSROOM:
+            return "Classroom";
+
+        case RoomType::MEETING_ROOM:
+            return "Meeting room";
+
+        case RoomType::STUDY_ROOM:
+            return "Study room";
+
+    }
+
+    return "Unknown";
 }
 
 int Room::getCapacity() const {
@@ -72,6 +95,7 @@ void Room::setAvailable(bool available) {
 // Display room information
 void Room::displayRoom() const {
     cout << "Room ID: " << roomID << endl;
+    cout << "type: " << getTypeString() << endl;
     cout << "Capacity: " << capacity << endl;
     cout << "Max capacity: " << maxcapacity << endl;
     cout << "Location: " << location << endl;
