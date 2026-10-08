@@ -1,40 +1,77 @@
 
 #include <cassert>
 #include <iostream>
+#include <vector>
 #include "../include/Room.h"
-
 
 using namespace std;
 
 int main() {
-    // Valid capacity
-    Room room1("R101", RoomType::CLASSROOM, ,10, 20 ,"Library", true);
+    // Test valid capacity
+    Room room1("R101", RoomType::CLASSROOM, 10, 20, "Library", true);
     assert(room1.getCapacity() == 10);
 
-    // Maximum capacity
-    Room room2("R102", RoomType::MEETING_ROOM, ,20, 30 ,"Library", true);
+    // Test maximum capacity
+    Room room2("R102", RoomType::MEETING_ROOM, 20, 30, "Library", true);
     assert(room2.getCapacity() == 20);
 
-    // Over maximum capacity
-    Room room3("R103", RoomType::STUDY_ROOM ,20, 15 ,"Library", true);
+    // Test capacity above the allowed maximum
+    Room room3("R103", RoomType::STUDY_ROOM, 20, 15, "Library", true);
 
-    // If your constructor changes invalid capacity to MAX_CAPACITY:
-    assert(room3.getCapacity() == 15);
+    // Assumes the constructor sets capacity to 15
+    // when the supplied capacity is invalid
+    assert(room3.getCapacity() == 20);
 
-    // Test setter with valid value
+    // Test setter with a valid value
     room1.setCapacity(20);
     assert(room1.getCapacity() == 20);
 
-    // Test setter with invalid value
+    // Test setter with an invalid value
     room1.setCapacity(30);
 
-    // If invalid setter keeps the old value:
+    // Assumes an invalid setter value leaves capacity unchanged
     assert(room1.getCapacity() == 20);
 
+    // Store rooms in a vector
+    vector<Room> rooms;
+    rooms.push_back(room1);
+    rooms.push_back(room2);
+    rooms.push_back(room3);
+
+    // Search rooms by requested capacity
+    cout << "---------------------------------------------------------------" << endl;
+    cout << "Enter capacity: ";
+
+    int requestedCapacity;
+    cin >> requestedCapacity;
+
+    // Validate user input
+    if (cin.fail() || requestedCapacity <= 0) {
+        cout << "Please enter a valid positive capacity." << endl;
+        return 1;
+    }
+
+    bool found = false;
+
+    cout << "Rooms that can accommodate " << requestedCapacity
+         << " people:" << endl;
+
+    for (const Room& room : rooms) {
+        if (room.canAccommodate(requestedCapacity)) {
+            room.displayRoom();
+            cout << endl;
+            found = true;
+        }
+    }
+
+    if (!found) {
+        cout << "There is no available room for capacity of "
+             << requestedCapacity << "." << endl;
+    }
+
+    cout << "---------------------------------------------------------------" << endl;
+
     cout << "All Room tests passed!" << endl;
-
-
-
 
     return 0;
 }

@@ -24,5 +24,17 @@ test-file:
 	$(CXX) $(CXXFLAGS) $(TEST_FILE_SRC) -o $(TEST_FILE_OUT)
 	./$(TEST_FILE_OUT)
 
+test-admin:
+	$(CXX) $(CXXFLAGS) $(TEST_ADMIN_SRC) -o $(TEST_ADMIN_OUT)
+	./$(TEST_ADMIN_OUT)
+
+test-student:
+	$(CXX) $(CXXFLAGS) $(TEST_STUDENT_SRC) -o $(TEST_STUDENT_OUT)
+	./$(TEST_STUDENT_OUT)
+
+test-staff: 
+	$(CXX) $(CXXFLAGS) $(TEST_STAFF_SRC) -o $(TEST_STAFF_OUT)
+	./$(TEST_STAFF_OUT)
+
 clean:
-	rm -f $(OUT)
+	rm -f $(APP_OUT) $(TEST_ROOM_OUT) $(TEST_FILE_OUT) $(TEST_ADMIN_OUT) $(TEST_STUDENT_OUT) $(TEST_STAFF_OUT)
