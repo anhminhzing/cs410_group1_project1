@@ -47,4 +47,5 @@ Acceptance Criteria:
 - Given an already reserved room, when another student requests an overlapping time, then the reservation is rejected.
 - Given a room capacity of 15, when 16 attendees or more are requested, then the reservation is rejected
 
+<img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/9dde57a4-0c19-4f84-acb5-fd752ede688c" />
 
