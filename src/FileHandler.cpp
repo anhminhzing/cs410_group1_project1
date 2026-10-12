@@ -1,5 +1,6 @@
 #include "../include/FileHandler.h"
 
+
 #include <fstream>
 #include <sstream>
 #include <iostream>
@@ -94,6 +95,84 @@ bool FileHandler::saveRooms(
              << room.getLocation() << ","
              << room.isAvailable()
              << endl;
+    }
+
+    file.close();
+
+    return true;
+}
+
+bool FileHandler::loadUsers(
+    const string& filename,
+    unordered_map<std::string, User*>& users
+) {
+    ifstream file(filename);
+
+    if (!file.is_open()) {
+        std::cerr << "Error: could not open "
+                  << filename << endl;
+
+        return false;
+    }
+
+    string line;
+
+    while (getline(file, line)) {
+
+        stringstream ss(line);
+
+        string type;
+        string userID;
+        string name;
+        string email;
+        string extraInfo;
+
+        getline(ss, type, ',');
+        getline(ss, userID, ',');
+        getline(ss, name, ',');
+        getline(ss, email, ',');
+        getline(ss, extraInfo, ',');
+
+        User* user = nullptr;
+
+        if (type == "Student") {
+
+            user = new Student(
+                userID,
+                name,
+                email,
+                extraInfo
+            );
+        }
+
+        else if (type == "Staff") {
+
+            user = new Staff(
+                userID,
+                name,
+                email,
+                extraInfo
+            );
+        }
+
+        else if (type == "Admin") {
+            
+            user = new Admin(
+                userID,
+                name,
+                email,
+                extraInfo
+            );
+        }
+
+        else {
+            std::cerr << "Unknown user type: "
+                      << type << std::endl;
+
+            continue;
+        }
+
+        users[userID] = user;
     }
 
     file.close();

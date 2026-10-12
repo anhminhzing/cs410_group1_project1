@@ -20,3 +20,15 @@ string User::getName() const {
 string User::getEmail() const {
     return email;
 }
+
+void User::setUserID(const std::string& userID) {
+    this->userID = userID;
+}
+
+void User::setName(const std::string& name) {
+    this->name = name;
+}
+
+void User::setEmail(const std::string& email) {
+    this->email = email;
+}

@@ -1,0 +1,5 @@
+Student,S001,Anh Duong,anh@student.edu,Computer Science
+Student,S002,John Smith,john@student.edu,Mathematics
+Staff,T001,Sarah Lee,sarah@university.edu,Computer Science
+Staff,T002,Michael Brown,michael@university.edu,Testing Center
+Admin,A001,Alice Johnson,alice@university.edu,Main Office

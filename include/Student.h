@@ -13,9 +13,10 @@ private:
 public:
     Student(string userID, string name, string email,
             string major);
-
+    // getter
     string getMajor() const;
     string getUserType() const override;
+    
     void displayStd() const;
 };
 
