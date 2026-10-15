@@ -9,9 +9,9 @@
 #include "../include/Reservation.h"
 using namespace std;
 
-Reservation::Reservation(const string &ownerID, const Room &room, const string &reservationID, std::chrono::time_point<std::chrono::system_clock> startTime, std::chrono::time_point<std::chrono::system_clock> endTime) {
+Reservation::Reservation(const string &ownerID, const string &roomID, const string &reservationID, std::chrono::time_point<std::chrono::system_clock> startTime, std::chrono::time_point<std::chrono::system_clock> endTime) {
     this->ownerID = ownerID;
-    this->room = room;
+    this->roomID = roomID;
     this->reservationID = reservationID;
     this->startTime = startTime;
     this->endTime = endTime;
@@ -22,8 +22,8 @@ string Reservation::getOwnerID() const {
     return this->ownerID;
 }
 
-Room Reservation::getRoom() const {
-    return this->room;
+string Reservation::getRoomID() const {
+    return this->roomID;
 }
 
 string Reservation::getReservationID() const {
@@ -56,6 +56,10 @@ void Reservation::checkedInReservation() {
 
 void Reservation::checkedOutReservation() {
     setStatus(ReservationStatus::CheckedOut);
+}
+
+bool Reservation::conflicts(const chrono::system_clock::time_point reqStart, const chrono::system_clock::time_point reqEnd) const {
+    return (this->startTime < reqStart && this->endTime < reqEnd);
 }
 
 
