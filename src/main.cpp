@@ -1,6 +1,10 @@
 #include <iostream>
 #include <vector>
 #include <unordered_map>
+#include <chrono>
+#include <iomanip>
+#include <sstream>
+#include <ctime>
 
 #include "Room.h"
 #include "User.h"
@@ -9,8 +13,43 @@
 #include "Admin.h"
 #include "FileHandler.h"
 #include "UserManagementSystem.h"
+#include "ReservationManagementSyatem.h"
 
 using namespace std;
+
+// =====================================
+// Helper function to convert user input before parsing it into the reservation system 
+// =====================================
+bool convertToTimePoint(
+    const string& date,
+    const string& time,
+    chrono::system_clock::time_point& result){
+    tm timeInfo = {};
+
+    istringstream input(date + " " + time);
+
+    input >> get_time(
+        &timeInfo,
+        "%m/%d/%Y %H:%M"
+    );
+
+    if (input.fail()){
+        return false;
+    }
+    timeInfo.tm_isdst = -1;
+
+    time_t convertedTime = mktime(&timeInfo);
+
+    if (convertedTime == -1){
+        return false;
+    }
+    result =
+        chrono::system_clock::from_time_t(
+            convertedTime
+        );
+    return true;
+}
+
 
 int main() {
 
@@ -20,11 +59,20 @@ int main() {
     vector<Room> rooms =
         FileHandler::loadRooms("data/rooms.txt");
 
-    cout << "===== ROOM LIST =====" << endl;
+     cout << "===== ROOM LIST =====" << endl;
 
     for (const Room& room : rooms) {
         room.displayRoom();
         cout << "---------------------" << endl;
+    }
+
+    // ==========================================
+    // Creating a Reservation Management System
+    //===========================================
+    ReservationManagementSyatem reservationSyatem;
+
+    for (const Room& room : rooms){
+        reservationSystem.addRoom(room);
     }
 
 
@@ -98,6 +146,118 @@ int main() {
         cout << "---------------------" << endl;
     }
 
+    // ==========================================
+    // User Login 
+    // ==========================================
+    string userID;
+
+    cout << endl;
+    cout << "===== LOGIN =====' << endl;
+    cout << "Enter User ID: ";
+    cin >> userID;
+
+    // Searching for user
+    auto userIt = 
+        userSystem.getUsers().find(userID);
+
+    if (userIt == userSystem.getUsers().end()) {
+        cout << "User not found." << endl;
+        return 1;
+    }
+
+    // Storing the current logged in user 
+    User* currentUser = userIt->second;
+
+    cout << endl;
+    cout << "Welcome,  "
+         << currentUer ->getName()
+         << "!" << endl;
+
+    // ===========================================
+    // Main Reservation Menu
+    // ===========================================
+    int choice = 0;
+    while (choice != 3){
+        cout << endl;
+        cout << "===== CAMPUS ROOM RESERVATION =====" << endl;
+        cout << "1. Make a Reservation" << endl;
+        cout << "2. Cancel a Reservation" << endl;
+        cout << "3. Exit" << endl;
+
+        cout << "Enter Choice: ";
+        cin >> choice;
+
+        if (choice == 1){
+            string date;
+            string startTime;
+            string endTime;
+            int capacity;
+
+            cout << endl;
+            cout << "==== MAKE RESERVATION ====." << endl;
+
+            cout << "Enter Date (MM/DD/YYYY): ";
+            cin >> date;
+
+            cout << "Enter Start Time (HH:MM): ";
+            cin >> startTime;
+
+            cout << "Enter End Time (HH:MM): ";
+            cin >> endTime;
+
+            cout << "Enter Capacity: ";
+            cin >> Capacity;
+
+            chrono::system_clock::time_point reqStart;
+            chrono::system_clock::time_point reqEnd;
+
+            bool validStart = 
+                convertToTimePoint(
+                    date,
+                    startTime,
+                    reqStart
+                );
+            bool validEnd =
+                convertToTimePoint(
+                    date, 
+                    endTime,
+                    reqEnd
+                );
+
+            if (!validStart || !validEnd){
+                cout << "Invalid date or time format." << endl;
+                continue;
+            }
+            if (reqEnd <= reqStart){
+                cout << "End Time must be after Start Time" << endl;
+                continue;
+            }
+            if (capacity < 0){
+                cout << "Capacity should be greater than 0" << endl;
+                continue;
+            }
+
+            cout << endl;
+            cout << "Reservation Request" << endl;
+            cout << "Date: " << date << endl;
+            cout << "Time: "
+                 << startTime
+                 << " - "
+                 << endTime
+                 << endl;
+            
+            cout << "Capacity: "
+                 << capacity
+                 << endl;
+            
+        } else if (choice == 2){
+            cout << "Cancel Reservation selected." << endl;
+        } else if (choice == 3){
+            cout << "Goodbye" << endl;
+        } else {
+            cout << "Invalid choice" << endl;
+        }
+    }
 
     return 0;
 }
