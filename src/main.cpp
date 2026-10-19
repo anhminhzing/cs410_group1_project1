@@ -232,23 +232,68 @@ int main() {
                 cout << "End Time must be after Start Time" << endl;
                 continue;
             }
-            if (capacity < 0){
+            if (capacity <= 0){
                 cout << "Capacity should be greater than 0" << endl;
                 continue;
             }
 
+            // Finding rooms that meet the user's criteria 
+            vector<Room> availableRooms;
+
+            for (const Room& room : rooms){
+                if (room.canAccommodate(capacity)){
+                    if (room.isAvailable()){
+                        if (reservationSystem.isRoomAvailable(
+                                room.getRoomID(),
+                                reqStart,
+                                reqEnd)){
+                            availableRooms.push_back(room);
+                        }
+                    }
+                }
+            }
+
+            // With no rooms found 
+            if (availableRooms.empty()){
+                cout << "No rooms are available for this selection." << endl;
+                continue;
+            }
+
+            //Displaying available rooms 
             cout << endl;
-            cout << "Reservation Request" << endl;
-            cout << "Date: " << date << endl;
-            cout << "Time: "
-                 << startTime
-                 << " - "
-                 << endTime
-                 << endl;
+            cout << "=== AVAILABLE ROOMS ===" << endl;
             
-            cout << "Capacity: "
-                 << capacity
-                 << endl;
+            for (const Room& room : availableRooms){
+                room.displayRoom();
+                cout << "------------------" << endl;
+            }
+
+            // User selects room 
+            string roomID;
+            cout << "Enter Room ID: ";
+            cin >> roomID;
+
+            // Verifying the room is available 
+            bool validRoom = false;
+            for (const Room& room : availableRooms){
+                if (room.getRoomID() == roomID){
+                    validRoom = true;
+                    break;
+                }
+            }
+            if (!validRoom){
+                cout << "Invalid Room ID." << endl;
+                continue;
+            }
+
+            // Creating Reservation 
+            bool success = 
+                reservationSystem.createReservation(roomID, currentUser->getUserID(), reqStart, reqEnd);
+            if (success){
+                cout << "Reservation created successfully." << endl;
+            } else {
+                cout << "Reservation unsuccessful." << endl;
+            }
             
         } else if (choice == 2){
             cout << "Cancel Reservation selected." << endl;
