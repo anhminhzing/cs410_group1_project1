@@ -13,7 +13,7 @@
 #include "Admin.h"
 #include "FileHandler.h"
 #include "UserManagementSystem.h"
-#include "ReservationManagementSyatem.h"
+#include "ReservationManagementSystem.h"
 
 using namespace std;
 
@@ -69,7 +69,7 @@ int main() {
     // ==========================================
     // Creating a Reservation Management System
     //===========================================
-    ReservationManagementSyatem reservationSyatem;
+    ReservationManagementSystem reservationSystem;
 
     for (const Room& room : rooms){
         reservationSystem.addRoom(room);
@@ -152,7 +152,7 @@ int main() {
     string userID;
 
     cout << endl;
-    cout << "===== LOGIN =====' << endl;
+    cout << "===== LOGIN =====" << endl;
     cout << "Enter User ID: ";
     cin >> userID;
 
@@ -170,7 +170,7 @@ int main() {
 
     cout << endl;
     cout << "Welcome,  "
-         << currentUer ->getName()
+         << currentUser->getName()
          << "!" << endl;
 
     // ===========================================
@@ -206,7 +206,7 @@ int main() {
             cin >> endTime;
 
             cout << "Enter Capacity: ";
-            cin >> Capacity;
+            cin >> capacity;
 
             chrono::system_clock::time_point reqStart;
             chrono::system_clock::time_point reqEnd;
