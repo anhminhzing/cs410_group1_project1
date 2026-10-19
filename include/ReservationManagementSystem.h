@@ -7,6 +7,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <chrono>
 
 #include "Reservation.h"
 #include "User.h"
@@ -32,6 +33,11 @@ public:
 
     void addRoom(const Room& room);
 
+    vector<Room> get AvailableRooms(
+        int requiredCapacity,
+        chrono::system_clock::time_point reqStart,
+        chrono::system_clock::time_point reqEnd
+    );
 
 };
 #endif //CS410_GROUP1_RESERVATIONMANAGEMENTSYSTEM_H
