@@ -33,7 +33,7 @@ public:
 
     void addRoom(const Room& room);
 
-    vector<Room> get AvailableRooms(
+    vector<Room> getAvailableRooms(
         int requiredCapacity,
         chrono::system_clock::time_point reqStart,
         chrono::system_clock::time_point reqEnd

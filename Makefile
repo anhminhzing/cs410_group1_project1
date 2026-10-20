@@ -1,96 +1,77 @@
-CXX = g++
-CXXFLAGS = -Iinclude -Wall -std=c++17
+# Compiler and flags
+CXX := g++
+CXXFLAGS := -Iinclude -Wall -Wextra -Wpedantic -std=c++17
+LDFLAGS :=
 
-APP_SRC = src/main.cpp \
-          src/Room.cpp \
-          src/User.cpp \
-          src/Student.cpp \
-          src/Staff.cpp \
-          src/Admin.cpp \
-          src/FileHandler.cpp \
-          src/UserManagementSystem.cpp
+# Directories
+SRC_DIR := src
+TEST_DIR := tests
+BUILD_DIR := build
 
-APP_OUT = build/main
+# Ensure build directory exists
+$(shell mkdir -p $(BUILD_DIR))
 
+# Application sources and target
+APP_SRC := $(wildcard $(SRC_DIR)/*.cpp)
+APP_MAIN := $(SRC_DIR)/main.cpp
+APP_SRC_NO_MAIN := $(filter-out $(APP_MAIN), $(APP_SRC))
+APP_OBJS := $(patsubst $(SRC_DIR)/%.cpp,$(BUILD_DIR)/%.o,$(APP_SRC))
+APP_OUT := $(BUILD_DIR)/main
 
-TEST_ROOM_SRC = tests/test_room.cpp \
-                src/Room.cpp
+# Test discovery: each tests/test_*.cpp becomes a separate binary
+TEST_SOURCES := $(wildcard $(TEST_DIR)/test_*.cpp)
+# Derive test names (e.g., tests/test_room.cpp -> test_room)
+TEST_NAMES := $(notdir $(basename $(TEST_SOURCES)))
+TEST_BINS := $(addprefix $(BUILD_DIR)/,$(TEST_NAMES))
 
-TEST_ROOM_OUT = build/test_room
+# Object files for tests: allow objects from src and per-test object
+TEST_OBJS_COMMON := $(patsubst $(SRC_DIR)/%.cpp,$(BUILD_DIR)/%.o,$(filter-out $(APP_MAIN),$(APP_SRC)))
 
+# Default target
+.PHONY: all
+all: $(APP_OUT)
 
-TEST_FILE_SRC = tests/test_filehandler.cpp \
-                src/Room.cpp \
-                src/User.cpp \
-                src/Student.cpp \
-                src/Staff.cpp \
-                src/Admin.cpp \
-                src/FileHandler.cpp
+# Link application
+$(APP_OUT): $(APP_OBJS)
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
 
-TEST_FILE_OUT = build/test_filehandler
+# Compile sources to objects
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
+# Pattern rule to build each test binary from its test source + common objects
+$(BUILD_DIR)/test_%: $(TEST_DIR)/test_%.cpp $(TEST_OBJS_COMMON)
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
 
-TEST_ADMIN_SRC = tests/test_admin.cpp \
-                 src/User.cpp \
-                 src/Admin.cpp
-
-TEST_ADMIN_OUT = build/test_admin
-
-
-TEST_STUDENT_SRC = tests/test_student.cpp \
-                   src/User.cpp \
-                   src/Student.cpp
-
-TEST_STUDENT_OUT = build/test_student
-
-
-TEST_STAFF_SRC = tests/test_staff.cpp \
-                 src/User.cpp \
-                 src/Staff.cpp
-
-TEST_STAFF_OUT = build/test_staff
-
-
-all:
-	$(CXX) $(CXXFLAGS) $(APP_SRC) -o $(APP_OUT)
-
-
-run: all
+# Convenience run target
+.PHONY: run
+run: $(APP_OUT)
 	./$(APP_OUT)
 
+# Individual test targets (phony)
+.PHONY: $(TEST_NAMES)
+$(TEST_NAMES): %: $(BUILD_DIR)/%
+	./$<
 
-test-room:
-	$(CXX) $(CXXFLAGS) $(TEST_ROOM_SRC) -o $(TEST_ROOM_OUT)
-	./$(TEST_ROOM_OUT)
+# Aggregate test target
+.PHONY: test-all
+test-all: $(TEST_BINS)
+	@set -e; \
+	for t in $(TEST_BINS); do \
+	  echo "Running $$t"; \
+	  ./$$t; \
+	done
 
-
-test-file:
-	$(CXX) $(CXXFLAGS) $(TEST_FILE_SRC) -o $(TEST_FILE_OUT)
-	./$(TEST_FILE_OUT)
-
-
-test-admin:
-	$(CXX) $(CXXFLAGS) $(TEST_ADMIN_SRC) -o $(TEST_ADMIN_OUT)
-	./$(TEST_ADMIN_OUT)
-
-
-test-student:
-	$(CXX) $(CXXFLAGS) $(TEST_STUDENT_SRC) -o $(TEST_STUDENT_OUT)
-	./$(TEST_STUDENT_OUT)
-
-
-test-staff:
-	$(CXX) $(CXXFLAGS) $(TEST_STAFF_SRC) -o $(TEST_STAFF_OUT)
-	./$(TEST_STAFF_OUT)
-
-
-test-all: test-room test-file test-admin test-student test-staff
-
-
+# Clean
+.PHONY: clean
 clean:
-	rm -f $(APP_OUT) \
-	      $(TEST_ROOM_OUT) \
-	      $(TEST_FILE_OUT) \
-	      $(TEST_ADMIN_OUT) \
-	      $(TEST_STUDENT_OUT) \
-	      $(TEST_STAFF_OUT)
+	rm -f $(BUILD_DIR)/*.o $(APP_OUT) $(TEST_BINS)
+
+# Helpful info
+.PHONY: info
+info:
+	@echo "App sources:    $(APP_SRC)"
+	@echo "App objects:    $(APP_OBJS)"
+	@echo "Test sources:   $(TEST_SOURCES)"
+	@echo "Test bins:      $(TEST_BINS)"
+
