@@ -1,308 +1,228 @@
-#include <iostream>
-#include <vector>
-#include <unordered_map>
+#include <algorithm>
 #include <chrono>
-#include <iomanip>
-#include <sstream>
 #include <ctime>
+#include <iomanip>
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <vector>
 
-#include "Room.h"
-#include "User.h"
-#include "Student.h"
-#include "Staff.h"
-#include "Admin.h"
 #include "FileHandler.h"
-#include "UserManagementSystem.h"
 #include "ReservationManagementSystem.h"
+#include "UserManagementSystem.h"
 
 using namespace std;
 
-// =====================================
-// Helper function to convert user input before parsing it into the reservation system 
-// =====================================
-bool convertToTimePoint(
-    const string& date,
-    const string& time,
-    chrono::system_clock::time_point& result){
-    tm timeInfo = {};
+namespace {
+using TimePoint = chrono::system_clock::time_point;
 
+bool readInput(const string& prompt, string& value) {
+    cout << prompt;
+    return static_cast<bool>(getline(cin, value));
+}
+
+bool parsePositiveInt(const string& text, int& value) {
+    istringstream input(text);
+    return (input >> value) && (input >> ws).eof() && value > 0;
+}
+
+bool parseDateTime(const string& date, const string& time,
+                   TimePoint& result) {
+    tm info{};
     istringstream input(date + " " + time);
-
-    input >> get_time(
-        &timeInfo,
-        "%m/%d/%Y %H:%M"
-    );
-
-    if (input.fail()){
+    input >> get_time(&info, "%m/%d/%Y %H:%M");
+    if (input.fail() || !(input >> ws).eof()) {
         return false;
     }
-    timeInfo.tm_isdst = -1;
 
-    time_t convertedTime = mktime(&timeInfo);
-
-    if (convertedTime == -1){
+    const tm requested = info;
+    info.tm_isdst = -1;
+    const time_t converted = mktime(&info);
+    // mktime normalizes impossible dates, so check the resulting fields.
+    if (converted == -1 || info.tm_year != requested.tm_year ||
+        info.tm_mon != requested.tm_mon || info.tm_mday != requested.tm_mday ||
+        info.tm_hour != requested.tm_hour || info.tm_min != requested.tm_min) {
         return false;
     }
-    result =
-        chrono::system_clock::from_time_t(
-            convertedTime
-        );
+    result = chrono::system_clock::from_time_t(converted);
     return true;
 }
 
+void showUsers(UserManagementSystem& users) {
+    vector<string> ids;
+    for (const auto& entry : users.getUsers()) {
+        ids.push_back(entry.first);
+    }
+    sort(ids.begin(), ids.end());
+    for (const auto& id : ids) {
+        const User* user = users.getUser(id);
+        cout << id << " | " << user->getName()
+                  << " | " << user->getUserType() << '\n';
+    }
+}
 
-int main() {
+User* login(UserManagementSystem& users) {
+    cout << "\n===== LOGIN =====\n"
+              << "Available accounts (ID | Name | Role):\n";
+    showUsers(users);
+    string id;
+    while (readInput("Enter your User ID (or 0 to exit): ", id)) {
+        if (id == "0") {
+            return nullptr;
+        }
+        if (User* user = users.getUser(id)) {
+            return user;
+        }
+        cout << "User ID not found. Please try again.\n";
+    }
+    return nullptr;
+}
 
-    // ==========================================
-    // Load rooms
-    // ==========================================
-    vector<Room> rooms =
-        FileHandler::loadRooms("data/rooms.txt");
-
-     cout << "===== ROOM LIST =====" << endl;
-
+void showRooms(const vector<Room>& rooms) {
+    if (rooms.empty()) {
+        cout << "No rooms found.\n";
+    }
     for (const Room& room : rooms) {
         room.displayRoom();
-        cout << "---------------------" << endl;
+        cout << "---------------------\n";
+    }
+}
+
+void makeReservation(const User& user, const vector<Room>& rooms,
+                     ReservationManagementSystem& reservations) {
+    string date, start, end, capacityText;
+    if (!readInput("Date (MM/DD/YYYY): ", date) ||
+        !readInput("Start time (HH:MM, 24-hour): ", start) ||
+        !readInput("End time (HH:MM, 24-hour): ", end) ||
+        !readInput("Required capacity: ", capacityText)) {
+        return;
     }
 
-    // ==========================================
-    // Creating a Reservation Management System
-    //===========================================
-    ReservationManagementSystem reservationSystem;
-
-    for (const Room& room : rooms){
-        reservationSystem.addRoom(room);
+    TimePoint startTime, endTime;
+    int capacity = 0;
+    if (!parseDateTime(date, start, startTime) ||
+        !parseDateTime(date, end, endTime)) {
+        cout << "Invalid date or time.\n";
+        return;
+    }
+    if (endTime <= startTime) {
+        cout << "End time must be after start time.\n";
+        return;
+    }
+    if (!parsePositiveInt(capacityText, capacity)) {
+        cout << "Capacity must be a positive whole number.\n";
+        return;
     }
 
-
-    // ==========================================
-    // Load users
-    // ==========================================
-    UserManagementSystem userSystem;
-
-    bool usersLoaded =
-        FileHandler::loadUsers(
-            "data/users.txt",
-            userSystem.getUsers()
-        );
-
-    if (!usersLoaded) {
-        cout << "Failed to load users." << endl;
-        return 1;
-    }
-
-    cout << endl;
-    cout << "===== USER LIST =====" << endl;
-
-    for (const auto& pair : userSystem.getUsers()) {
-
-        User* user = pair.second;
-
-        cout << "User ID: "
-             << user->getUserID()
-             << endl;
-
-        cout << "Name: "
-             << user->getName()
-             << endl;
-
-        cout << "Email: "
-             << user->getEmail()
-             << endl;
-
-        cout << "User Type: "
-             << user->getUserType()
-             << endl;
-
-
-        // Student information
-        if (Student* student =
-                dynamic_cast<Student*>(user)) {
-
-            cout << "Major: "
-                 << student->getMajor()
-                 << endl;
+    vector<Room> available;
+    for (const Room& room : rooms) {
+        if (room.isAvailable() && room.canAccommodate(capacity) &&
+            reservations.isRoomAvailable(room.getRoomID(), startTime, endTime)) {
+            available.push_back(room);
         }
-
-        // Staff information
-        else if (Staff* staff =
-                     dynamic_cast<Staff*>(user)) {
-
-            cout << "Department: "
-                 << staff->getDepartment()
-                 << endl;
-        }
-
-        // Admin information
-        else if (Admin* admin =
-                     dynamic_cast<Admin*>(user)) {
-
-            cout << "Office: "
-                 << admin->getOffice()
-                 << endl;
-        }
-
-        cout << "---------------------" << endl;
     }
-
-    // ==========================================
-    // User Login 
-    // ==========================================
-    string userID;
-
-    cout << endl;
-    cout << "===== LOGIN =====" << endl;
-    cout << "Enter User ID: ";
-    cin >> userID;
-
-    // Searching for user
-    auto userIt = 
-        userSystem.getUsers().find(userID);
-
-    if (userIt == userSystem.getUsers().end()) {
-        cout << "User not found." << endl;
-        return 1;
+    if (available.empty()) {
+        cout << "No rooms are available for this selection.\n";
+        return;
     }
+    cout << "\n===== AVAILABLE ROOMS =====\n";
+    showRooms(available);
+    string roomID;
+    if (!readInput("Enter Room ID (or 0 to go back): ", roomID) || roomID == "0") {
+        return;
+    }
+    const auto selected = find_if(available.begin(), available.end(),
+        [&roomID](const Room& room) { return room.getRoomID() == roomID; });
+    if (selected == available.end()) {
+        cout << "Please select one of the available room IDs.\n";
+        return;
+    }
+    reservations.createReservation(roomID, user.getUserID(), startTime, endTime);
+}
 
-    // Storing the current logged in user 
-    User* currentUser = userIt->second;
+void cancelReservation(const User& user, bool admin,
+                       ReservationManagementSystem& reservations) {
+    bool found = false;
+    for (const auto& entry : reservations.getReservations()) {
+        const Reservation& reservation = entry.second;
+        if (reservation.getStatus() != ReservationStatus::Cancelled &&
+            (admin || reservation.getOwnerID() == user.getUserID())) {
+            cout << entry.first << " | Room: " << reservation.getRoomID()
+                      << " | User: " << reservation.getOwnerID() << '\n';
+            found = true;
+        }
+    }
+    if (!found) {
+        cout << "No reservations available to cancel.\n";
+        return;
+    }
+    string id;
+    if (!readInput("Reservation ID to cancel (or 0 to go back): ", id) || id == "0") {
+        return;
+    }
+    const auto& records = reservations.getReservations();
+    const auto selected = records.find(id);
+    if (selected == records.end() ||
+        selected->second.getStatus() == ReservationStatus::Cancelled ||
+        (!admin && selected->second.getOwnerID() != user.getUserID())) {
+        cout << "Please select one of the listed reservation IDs.\n";
+        return;
+    }
+    reservations.cancelReservation(id);
+}
 
-    cout << endl;
-    cout << "Welcome,  "
-         << currentUser->getName()
-         << "!" << endl;
-
-    // ===========================================
-    // Main Reservation Menu
-    // ===========================================
-    int choice = 0;
-    while (choice != 3){
-        cout << endl;
-        cout << "===== CAMPUS ROOM RESERVATION =====" << endl;
-        cout << "1. Make a Reservation" << endl;
-        cout << "2. Cancel a Reservation" << endl;
-        cout << "3. Exit" << endl;
-
-        cout << "Enter Choice: ";
-        cin >> choice;
-
-        if (choice == 1){
-            string date;
-            string startTime;
-            string endTime;
-            int capacity;
-
-            cout << endl;
-            cout << "==== MAKE RESERVATION ====." << endl;
-
-            cout << "Enter Date (MM/DD/YYYY): ";
-            cin >> date;
-
-            cout << "Enter Start Time (HH:MM): ";
-            cin >> startTime;
-
-            cout << "Enter End Time (HH:MM): ";
-            cin >> endTime;
-
-            cout << "Enter Capacity: ";
-            cin >> capacity;
-
-            chrono::system_clock::time_point reqStart;
-            chrono::system_clock::time_point reqEnd;
-
-            bool validStart = 
-                convertToTimePoint(
-                    date,
-                    startTime,
-                    reqStart
-                );
-            bool validEnd =
-                convertToTimePoint(
-                    date, 
-                    endTime,
-                    reqEnd
-                );
-
-            if (!validStart || !validEnd){
-                cout << "Invalid date or time format." << endl;
-                continue;
-            }
-            if (reqEnd <= reqStart){
-                cout << "End Time must be after Start Time" << endl;
-                continue;
-            }
-            if (capacity <= 0){
-                cout << "Capacity should be greater than 0" << endl;
-                continue;
-            }
-
-            // Finding rooms that meet the user's criteria 
-            vector<Room> availableRooms;
-
-            for (const Room& room : rooms){
-                if (room.canAccommodate(capacity)){
-                    if (room.isAvailable()){
-                        if (reservationSystem.isRoomAvailable(
-                                room.getRoomID(),
-                                reqStart,
-                                reqEnd)){
-                            availableRooms.push_back(room);
-                        }
-                    }
-                }
-            }
-
-            // With no rooms found 
-            if (availableRooms.empty()){
-                cout << "No rooms are available for this selection." << endl;
-                continue;
-            }
-
-            //Displaying available rooms 
-            cout << endl;
-            cout << "=== AVAILABLE ROOMS ===" << endl;
-            
-            for (const Room& room : availableRooms){
-                room.displayRoom();
-                cout << "------------------" << endl;
-            }
-
-            // User selects room 
-            string roomID;
-            cout << "Enter Room ID: ";
-            cin >> roomID;
-
-            // Verifying the room is available 
-            bool validRoom = false;
-            for (const Room& room : availableRooms){
-                if (room.getRoomID() == roomID){
-                    validRoom = true;
-                    break;
-                }
-            }
-            if (!validRoom){
-                cout << "Invalid Room ID." << endl;
-                continue;
-            }
-
-            // Creating Reservation 
-            bool success = 
-                reservationSystem.createReservation(roomID, currentUser->getUserID(), reqStart, reqEnd);
-            if (success){
-                cout << "Reservation created successfully." << endl;
-            } else {
-                cout << "Reservation unsuccessful." << endl;
-            }
-            
-        } else if (choice == 2){
-            cout << "Cancel Reservation selected." << endl;
-        } else if (choice == 3){
-            cout << "Goodbye" << endl;
+void runSession(User& user, UserManagementSystem& users,
+                const vector<Room>& rooms,
+                ReservationManagementSystem& reservations) {
+    const bool admin = users.isAdmin(user.getUserID());
+    cout << "\nWelcome, " << user.getName() << " (" << user.getUserType() << ")!\n";
+    string choice;
+    while (cin) {
+        cout << "\n===== " << user.getUserType() << " MENU =====\n"
+                  << "1. View rooms\n"
+                  << "2. Search available rooms and make a reservation\n"
+                  << (admin ? "3. Cancel any reservation\n" : "3. Cancel my reservation\n");
+        if (admin) {
+            cout << "4. View user accounts\n";
+        }
+        cout << "0. Log out\n";
+        if (!readInput("Enter choice: ", choice) || choice == "0") {
+            return;
+        }
+        if (choice == "1") {
+            showRooms(rooms);
+        } else if (choice == "2") {
+            makeReservation(user, rooms, reservations);
+        } else if (choice == "3") {
+            cancelReservation(user, admin, reservations);
+        } else if (choice == "4" && admin) {
+            showUsers(users);
         } else {
-            cout << "Invalid choice" << endl;
+            cout << "Invalid choice. Please select a listed option.\n";
         }
     }
+}
+} // namespace
 
+int main() {
+    UserManagementSystem users;
+    if (!FileHandler::loadUsers("data/users.txt", users.getUsers()) ||
+        users.getUsers().empty()) {
+        cerr << "No user accounts could be loaded from data/users.txt.\n";
+        return 1;
+    }
+    const vector<Room> rooms = FileHandler::loadRooms("data/rooms.txt");
+    ReservationManagementSystem reservations;
+    for (const Room& room : rooms) {
+        reservations.addRoom(room);
+    }
+
+    cout << "===== CAMPUS ROOM RESERVATION =====\n"
+              << "Sign in with an existing User ID to access your role's functions.\n"
+              << "Reservations are kept for this application session only.\n";
+    while (User* user = login(users)) {
+        runSession(*user, users, rooms, reservations);
+    }
+    cout << "Goodbye!\n";
     return 0;
 }

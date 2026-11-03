@@ -59,7 +59,7 @@ void Reservation::checkedOutReservation() {
 }
 
 bool Reservation::conflicts(const chrono::system_clock::time_point reqStart, const chrono::system_clock::time_point reqEnd) const {
-    return (this->startTime < reqStart && this->endTime < reqEnd);
+    return this->startTime < reqEnd && reqStart < this->endTime;
 }
 
 

@@ -53,7 +53,8 @@ bool ReservationManagementSystem::createReservation(const string roomID, const s
     string generatedID = "RES_" + to_string(nextReservationId++);
 
     Reservation newRes(userID, roomID, generatedID, startTime, endTime);
-    reservations.insert(make_pair(roomID, newRes));
+    reservations.emplace(generatedID, newRes);
+    roomReservations[roomID].push_back(generatedID);
     cout << "Successfully created reservation with ID: " << generatedID << endl;
     return true;
 }

@@ -31,6 +31,10 @@ public:
     bool createReservation(const string roomID, const string userID, chrono::system_clock::time_point startTime, chrono::system_clock::time_point endTime);
     bool cancelReservation(const string& reservationID);
 
+    const unordered_map<string, Reservation>& getReservations() const {
+        return reservations;
+    }
+
     void addRoom(const Room& room);
 
     vector<Room> getAvailableRooms(
