@@ -3,6 +3,7 @@
 #include <ctime>
 #include <iomanip>
 #include <iostream>
+#include <memory>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -58,6 +59,111 @@ void showUsers(UserManagementSystem& users) {
         const User* user = users.getUser(id);
         cout << id << " | " << user->getName()
                   << " | " << user->getUserType() << '\n';
+    }
+}
+
+void showUserDetails(UserManagementSystem& users) {
+    showUsers(users);
+    for (const auto& entry : users.getUsers()) {
+        const User* user = entry.second;
+        cout << "\nID: " << user->getUserID() << "\nName: " << user->getName()
+             << "\nEmail: " << user->getEmail() << "\nRole: " << user->getUserType();
+        if (const auto* student = dynamic_cast<const Student*>(user)) {
+            cout << "\nMajor: " << student->getMajor();
+        } else if (const auto* staff = dynamic_cast<const Staff*>(user)) {
+            cout << "\nDepartment: " << staff->getDepartment();
+        } else if (const auto* admin = dynamic_cast<const Admin*>(user)) {
+            cout << "\nOffice: " << admin->getOffice();
+        }
+        cout << '\n';
+    }
+}
+
+bool readField(const string& prompt, string& value) {
+    while (readInput(prompt, value)) {
+        if (value.find_first_not_of(" \t\r") != string::npos &&
+            value.find_first_of(",\r\n") == string::npos) {
+            return true;
+        }
+        cout << "Enter a nonempty value without commas.\n";
+    }
+    return false;
+}
+
+unique_ptr<User> readUser(const string& id, const User* existing) {
+    string role, name, email, extra;
+    cout << "Enter account details" << (existing ? " (ID stays unchanged)" : "") << ".\n";
+    while (readInput("Role (1. Student, 2. Staff, 3. Admin): ", role)) {
+        if (role == "1" || role == "2" || role == "3") {
+            break;
+        }
+        cout << "Please choose 1, 2, or 3.\n";
+    }
+    if (!cin || !readField("Name: ", name) || !readField("Email: ", email) ||
+        !readField(role == "1" ? "Major: " : role == "2" ? "Department: " : "Office: ", extra)) {
+        return nullptr;
+    }
+    if (role == "1") return make_unique<Student>(id, name, email, extra);
+    if (role == "2") return make_unique<Staff>(id, name, email, extra);
+    return make_unique<Admin>(id, name, email, extra);
+}
+
+void manageUsers(const string& adminID, UserManagementSystem& users) {
+    // Check permission at the entry point as well as in the session menu.
+    if (!users.isAdmin(adminID)) return;
+    string choice;
+    while (cin) {
+        cout << "\n===== USER MANAGEMENT =====\n"
+             << "1. View users\n2. Add user\n3. Edit user\n4. Delete user\n0. Back\n";
+        if (!readInput("Enter choice: ", choice) || choice == "0") return;
+        if (choice == "1") {
+            showUserDetails(users);
+            continue;
+        }
+        if (choice != "2" && choice != "3" && choice != "4") {
+            cout << "Invalid choice.\n";
+            continue;
+        }
+        string id;
+        if (!readField("User ID (or 0 to go back): ", id)) return;
+        if (id == "0") continue;
+        if (id.find_first_of(" \t") != string::npos) {
+            cout << "User IDs cannot contain spaces.\n";
+            continue;
+        }
+        User* existing = users.getUser(id);
+        if ((choice == "2" && existing) || (choice != "2" && !existing)) {
+            cout << (existing ? "User ID already exists.\n" : "User ID not found.\n");
+            continue;
+        }
+        if (choice == "4" && id == adminID) {
+            cout << "You cannot delete your logged-in account.\n";
+            continue;
+        }
+
+        unique_ptr<User> replacement;
+        auto updated = users.getUsers();
+        if (choice == "4") {
+            updated.erase(id);
+        } else {
+            replacement = readUser(id, existing);
+            if (!replacement) return;
+            if (id == adminID && replacement->getUserType() != "Admin") {
+                cout << "Your logged-in account must keep the Admin role.\n";
+                continue;
+            }
+            updated[id] = replacement.get();
+        }
+        // Save the proposed records before changing the live accounts.
+        if (!FileHandler::saveUsers("data/users.txt", updated)) {
+            cout << "Could not save users. No account changes were applied.\n";
+            continue;
+        }
+        users.getUsers().swap(updated);
+        replacement.release();
+        delete existing;
+        cout << "User " << (choice == "2" ? "added" : choice == "3" ? "updated" : "deleted")
+             << " successfully. Changes saved.\n";
     }
 }
 
@@ -175,15 +281,18 @@ void runSession(User& user, UserManagementSystem& users,
                 const vector<Room>& rooms,
                 ReservationManagementSystem& reservations) {
     const bool admin = users.isAdmin(user.getUserID());
+    const string userID = user.getUserID();
     cout << "\nWelcome, " << user.getName() << " (" << user.getUserType() << ")!\n";
     string choice;
     while (cin) {
-        cout << "\n===== " << user.getUserType() << " MENU =====\n"
+        // An admin may edit their own account, replacing its User object.
+        User& currentUser = *users.getUser(userID);
+        cout << "\n===== " << currentUser.getUserType() << " MENU =====\n"
                   << "1. View rooms\n"
                   << "2. Search available rooms and make a reservation\n"
                   << (admin ? "3. Cancel any reservation\n" : "3. Cancel my reservation\n");
         if (admin) {
-            cout << "4. View user accounts\n";
+            cout << "4. Manage user accounts\n";
         }
         cout << "0. Log out\n";
         if (!readInput("Enter choice: ", choice) || choice == "0") {
@@ -192,11 +301,11 @@ void runSession(User& user, UserManagementSystem& users,
         if (choice == "1") {
             showRooms(rooms);
         } else if (choice == "2") {
-            makeReservation(user, rooms, reservations);
+            makeReservation(currentUser, rooms, reservations);
         } else if (choice == "3") {
-            cancelReservation(user, admin, reservations);
+            cancelReservation(currentUser, admin, reservations);
         } else if (choice == "4" && admin) {
-            showUsers(users);
+            manageUsers(userID, users);
         } else {
             cout << "Invalid choice. Please select a listed option.\n";
         }

@@ -4,6 +4,7 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <cstdio>
 
 using namespace std;
 
@@ -177,5 +178,39 @@ bool FileHandler::loadUsers(
 
     file.close();
 
+    return true;
+}
+
+bool FileHandler::saveUsers(
+    const string& filename,
+    const unordered_map<string, User*>& users
+) {
+    const string temporary = filename + ".tmp";
+    ofstream file(temporary);
+    if (!file) {
+        return false;
+    }
+    for (const auto& entry : users) {
+        const User* user = entry.second;
+        string extra;
+        if (const auto* student = dynamic_cast<const Student*>(user)) {
+            extra = student->getMajor();
+        } else if (const auto* staff = dynamic_cast<const Staff*>(user)) {
+            extra = staff->getDepartment();
+        } else if (const auto* admin = dynamic_cast<const Admin*>(user)) {
+            extra = admin->getOffice();
+        } else {
+            file.close();
+            std::remove(temporary.c_str());
+            return false;
+        }
+        file << user->getUserType() << ',' << user->getUserID() << ','
+             << user->getName() << ',' << user->getEmail() << ',' << extra << '\n';
+    }
+    file.close();
+    if (!file || std::rename(temporary.c_str(), filename.c_str()) != 0) {
+        std::remove(temporary.c_str());
+        return false;
+    }
     return true;
 }
