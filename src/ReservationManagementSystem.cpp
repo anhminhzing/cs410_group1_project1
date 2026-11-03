@@ -71,3 +71,71 @@ bool ReservationManagementSystem::cancelReservation(const string& reservationID)
     return true;
 }
 
+bool ReservationManagementSystem::deleteReservation(const string& reservationID) {
+    auto it = reservations.find(reservationID);
+    if (it == reservations.end()) {
+        cout << "Reservation: " << reservationID << " not found" << endl;
+        return false;
+    }
+
+    string roomID = it->second.getRoomID();
+    auto roomIt = roomReservations.find(roomID);
+    if (roomIt != roomReservations.end()) {
+        auto& resList = roomIt->second;
+        for (auto vecIt = resList.begin(); vecIt != resList.end(); ++vecIt) {
+            if (*vecIt == reservationID) {
+                resList.erase(vecIt);
+                break;
+            }
+        }
+
+        if (resList.empty()) {
+            roomReservations.erase(roomID);
+        }
+    }
+
+    reservations.erase(it);
+    cout << "Successfully deleted reservation: " << reservationID << endl;
+    return true;
+}
+
+vector<Room> ReservationManagementSystem::getAvailableRooms(
+        int requiredCapacity,
+        chrono::system_clock::time_point reqStart,
+        chrono::system_clock::time_point reqEnd
+        ) {
+
+    vector<Room> availableRooms;
+    availableRooms.reserve(rooms.size());
+
+    for (const auto& [roomID, room] : rooms) {
+        if (room.getCapacity() < requiredCapacity) {
+            continue;
+        }
+
+        auto roomIt = roomReservations.find(roomID);
+        if (roomIt == roomReservations.end()) {
+            bool hasConflict = false;
+
+            for (const string& resID : roomIt->second) {
+                auto resIt = reservations.find(resID);
+                if (resIt != reservations.end()) {
+                    const auto& reservation = resIt->second;
+                    if (reservation.getStatus() != ReservationStatus::Cancelled && reservation.conflicts(reqStart, reqEnd)) {
+                        hasConflict = true;
+                        break;
+                    }
+                }
+            }
+
+            if (hasConflict) {
+                continue;
+            }
+        }
+
+        availableRooms.push_back(room);
+    }
+
+    return availableRooms;
+}
+
