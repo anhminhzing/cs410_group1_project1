@@ -168,31 +168,10 @@ vector<Room> ReservationManagementSystem::getAvailableRooms(
     availableRooms.reserve(rooms.size());
 
     for (const auto& [roomID, room] : rooms) {
-        if (room.getCapacity() < requiredCapacity) {
-            continue;
+        if (room.isAvailable() && room.canAccommodate(requiredCapacity) &&
+            isRoomAvailable(roomID, reqStart, reqEnd)) {
+            availableRooms.push_back(room);
         }
-
-        auto roomIt = roomReservations.find(roomID);
-        if (roomIt == roomReservations.end()) {
-            bool hasConflict = false;
-
-            for (const string& resID : roomIt->second) {
-                auto resIt = reservations.find(resID);
-                if (resIt != reservations.end()) {
-                    const auto& reservation = resIt->second;
-                    if (reservation.getStatus() != ReservationStatus::Cancelled && reservation.conflicts(reqStart, reqEnd)) {
-                        hasConflict = true;
-                        break;
-                    }
-                }
-            }
-
-            if (hasConflict) {
-                continue;
-            }
-        }
-
-        availableRooms.push_back(room);
     }
 
     return availableRooms;

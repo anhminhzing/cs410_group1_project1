@@ -28,15 +28,13 @@ vector<Room> FileHandler::loadRooms(const string& filename) {
         string roomID;
         string type_str;
         RoomType type;
-        string capacityText;
-        string maxcapacityText;
+        string maxCapacityText;
         string location;
         string availableText;
 
         getline(ss, roomID, ',');
         getline(ss, type_str, ',');
-        getline(ss, capacityText, ',');
-        getline(ss, maxcapacityText, ',');
+        getline(ss, maxCapacityText, ',');
         getline(ss, location, ',');
         getline(ss, availableText, ',');
         
@@ -54,15 +52,13 @@ vector<Room> FileHandler::loadRooms(const string& filename) {
         }
 
         
-        int capacity = stoi(capacityText);
-        int maxcapacity = stoi(maxcapacityText);
+        int maxCapacity = stoi(maxCapacityText);
         bool available = (availableText == "1");
 
         Room room(
             roomID,
             type,
-            capacity,
-            maxcapacity,
+            maxCapacity,
             location,
             available
         );
@@ -91,8 +87,7 @@ bool FileHandler::saveRooms(
     for (const Room& room : rooms) {
         file << room.getRoomID() << ","
              << room.getTypeString() << ","
-             << room.getCapacity() << ","
-             << room.getMaxcapacity() << ","
+             << room.getMaxCapacity() << ","
              << room.getLocation() << ","
              << room.isAvailable()
              << endl;

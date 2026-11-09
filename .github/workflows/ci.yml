@@ -30,6 +30,5 @@ jobs:
       - name: Build application
         run: make all
 
-      # test_room reads a positive capacity from standard input.
       - name: Run C++ tests
-        run: printf '5\n' | make test-all
+        run: make test-all

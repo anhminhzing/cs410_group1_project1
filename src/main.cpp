@@ -200,7 +200,7 @@ void makeReservation(const User& user, const vector<Room>& rooms,
     if (!readInput("Date (MM/DD/YYYY): ", date) ||
         !readInput("Start time (HH:MM, 24-hour): ", start) ||
         !readInput("End time (HH:MM, 24-hour): ", end) ||
-        !readInput("Required capacity: ", capacityText)) {
+        !readInput("Number of attendees: ", capacityText)) {
         return;
     }
 
@@ -216,7 +216,7 @@ void makeReservation(const User& user, const vector<Room>& rooms,
         return;
     }
     if (!parsePositiveInt(capacityText, capacity)) {
-        cout << "Capacity must be a positive whole number.\n";
+        cout << "Number of attendees must be a positive whole number.\n";
         return;
     }
 

@@ -12,7 +12,7 @@ int main() {
         ("cs410-reservations-" + to_string(chrono::steady_clock::now().time_since_epoch().count()));
     filesystem::create_directory(directory);
     const string path = (directory / "reservations.txt").string();
-    const Room room("TEST", RoomType::CLASSROOM, 10, 20, "Library", true);
+    const Room room("TEST", RoomType::CLASSROOM, 20, "Library", true);
     const auto start = chrono::system_clock::time_point(chrono::seconds(1800000000));
     const auto end = start + chrono::hours(1);
 

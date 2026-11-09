@@ -54,15 +54,13 @@ void checkRooms(const vector<Room>& rooms) {
     assert(rooms.size() == 3);
     const string ids[] = {"R101", "R102", "R103"};
     const RoomType types[] = {RoomType::CLASSROOM, RoomType::STUDY_ROOM, RoomType::MEETING_ROOM};
-    const int capacities[] = {10, 20, 8};
     const int limits[] = {30, 40, 20};
     const string locations[] = {"Library", "Campus Center", "Science Building"};
     for (size_t index = 0; index < rooms.size(); ++index) {
         const Room& room = rooms[index];
         assert(room.getRoomID() == ids[index]);
         assert(room.getType() == types[index]);
-        assert(room.getCapacity() == capacities[index]);
-        assert(room.getMaxcapacity() == limits[index]);
+        assert(room.getMaxCapacity() == limits[index]);
         assert(room.getLocation() == locations[index]);
         assert(room.isAvailable() == (index != 2));
     }
@@ -70,9 +68,9 @@ void checkRooms(const vector<Room>& rooms) {
 
 void testRoomLoadAndSave(const TestFiles& files) {
     files.write("rooms.txt",
-        "R101,Classroom,10,30,Library,1\n"
-        "R102,Study room,20,40,Campus Center,1\n"
-        "R103,Meeting room,8,20,Science Building,0\n");
+        "R101,Classroom,30,Library,1\n"
+        "R102,Study room,40,Campus Center,1\n"
+        "R103,Meeting room,20,Science Building,0\n");
     const auto rooms = FileHandler::loadRooms(files.path("rooms.txt"));
     checkRooms(rooms);
     assert(FileHandler::saveRooms(files.path("saved_rooms.txt"), rooms));

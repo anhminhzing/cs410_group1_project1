@@ -3,13 +3,11 @@
 using namespace std;
 
 
-//Room(int roomID, int capacity,int maxCapacity ,string location, bool available);
 // Default constructor
 Room::Room() {
     roomID = "";
-    capacity = 0;
     type = RoomType::CLASSROOM;
-    maxcapacity = MAX_CAPACITY;
+    maxCapacity = MAX_CAPACITY;
     location = "";
     available = true;
     
@@ -17,11 +15,10 @@ Room::Room() {
 
 
 // Constructor with parameters
-Room::Room(string roomID, RoomType type ,int capacity,int maxcapacity ,string location, bool available) {
+Room::Room(string roomID, RoomType type ,int maxCapacity ,string location, bool available) {
     this->roomID = roomID;
     this->type = type;
-    this->capacity = capacity;
-    this->maxcapacity = maxcapacity;
+    this->maxCapacity = maxCapacity;
     this->location = location;
     this->available = available;
 }
@@ -51,12 +48,8 @@ string Room::getTypeString() const {
     return "Unknown";
 }
 
-int Room::getCapacity() const {
-    return capacity;
-}
-
-int Room::getMaxcapacity() const {
-    return maxcapacity;
+int Room::getMaxCapacity() const {
+    return maxCapacity;
 }
 
 string Room::getLocation() const {
@@ -72,15 +65,8 @@ void Room::setRoomID(string roomID) {
     this->roomID = roomID;
 }
 
-void Room::setCapacity(int capacity) {
-    if (capacity < 1 || capacity >  this->maxcapacity){
-        cout << "capacity is unvalid, please double check" << endl;
-    } else{
-        this->capacity = capacity;
-    }
-}
-void Room::setMaxcapacity(int maxcapacity) {
-    this->maxcapacity = maxcapacity;
+void Room::setMaxCapacity(int maxCapacity) {
+    this->maxCapacity = maxCapacity;
 
 }
 
@@ -96,13 +82,12 @@ void Room::setAvailable(bool available) {
 void Room::displayRoom() const {
     cout << "Room ID: " << roomID << endl;
     cout << "type: " << getTypeString() << endl;
-    cout << "Capacity: " << capacity << endl;
-    cout << "Max capacity: " << maxcapacity << endl;
+    cout << "Max capacity: " << maxCapacity << endl;
     cout << "Location: " << location << endl;
     cout << "Available: "
          << (available ? "Yes" : "No") << endl;
 }
 
 bool Room::canAccommodate(int requestedCapacity) const {
-    return  1 <= requestedCapacity && requestedCapacity <= maxcapacity;
+    return  1 <= requestedCapacity && requestedCapacity <= maxCapacity;
 }

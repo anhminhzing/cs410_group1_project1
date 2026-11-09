@@ -20,8 +20,7 @@ class Room {
 private:
     string roomID;
     RoomType type;
-    int capacity;
-    int maxcapacity;
+    int maxCapacity;
     string location;
     bool available;
 
@@ -32,21 +31,19 @@ public:
     Room();
 
     Room(string roomID, RoomType type,
-         int capacity,int maxcapacity ,string location, bool available);
+         int maxCapacity ,string location, bool available);
 
     // Getters
     string getRoomID() const;
     RoomType getType() const;
-    int getCapacity() const;
-    int getMaxcapacity() const;
+    int getMaxCapacity() const;
     string getLocation() const;
     bool isAvailable() const;
 
     // Setters
     void setRoomID(string roomID);
     void setType(RoomType type);
-    void setCapacity(int capacity);
-    void setMaxcapacity(int maxcapacity);
+    void setMaxCapacity(int maxCapacity);
     void setLocation(string location);
     void setAvailable(bool available);
 

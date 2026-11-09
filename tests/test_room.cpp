@@ -1,77 +1,51 @@
-
 #include <cassert>
+#include <chrono>
 #include <iostream>
-#include <vector>
-#include "../include/Room.h"
+#include "Room.h"
+#include "ReservationManagementSystem.h"
 
 using namespace std;
 
 int main() {
-    // Test valid capacity
-    Room room1("R101", RoomType::CLASSROOM, 10, 20, "Library", true);
-    assert(room1.getCapacity() == 10);
+    Room room("R101", RoomType::CLASSROOM, 30, "Library", true);
+    assert(room.getRoomID() == "R101");
+    assert(room.getType() == RoomType::CLASSROOM);
+    assert(room.getMaxCapacity() == 30);
+    assert(room.getLocation() == "Library");
+    assert(room.isAvailable());
 
-    // Test maximum capacity
-    Room room2("R102", RoomType::MEETING_ROOM, 20, 30, "Library", true);
-    assert(room2.getCapacity() == 20);
+    // Attendee boundaries use the single room-size property.
+    assert(room.canAccommodate(1));
+    assert(room.canAccommodate(30));
+    assert(!room.canAccommodate(31));
+    assert(!room.canAccommodate(0));
+    assert(!room.canAccommodate(-1));
+    room.setMaxCapacity(40);
+    assert(room.getMaxCapacity() == 40);
+    assert(room.canAccommodate(40));
+    assert(!room.canAccommodate(41));
 
-    // Test capacity above the allowed maximum
-    Room room3("R103", RoomType::STUDY_ROOM, 20, 15, "Library", true);
+    Room defaultRoom;
+    assert(defaultRoom.getMaxCapacity() == Room::MAX_CAPACITY);
 
-    // Assumes the constructor sets capacity to 15
-    // when the supplied capacity is invalid
-    assert(room3.getCapacity() == 20);
+    // Search must apply the same maximum, availability, and conflict rules.
+    ReservationManagementSystem system;
+    system.addRoom(room);
+    system.addRoom(Room("R102", RoomType::STUDY_ROOM, 10, "Campus Center", true));
+    system.addRoom(Room("R103", RoomType::MEETING_ROOM, 50, "Science Building", false));
+    const auto start = chrono::system_clock::time_point(chrono::seconds(1800000000));
+    const auto end = start + chrono::hours(1);
+    auto available = system.getAvailableRooms(40, start, end);
+    assert(available.size() == 1);
+    assert(available.front().getRoomID() == "R101");
+    assert(system.getAvailableRooms(41, start, end).empty());
+    assert(system.getAvailableRooms(0, start, end).empty());
+    assert(system.getAvailableRooms(-1, start, end).empty());
+    assert(system.createReservation("R101", "S001", start, end));
+    assert(system.getAvailableRooms(40, start, end).empty());
+    assert(system.getAvailableRooms(40, end, end + chrono::hours(1)).size() == 1);
+    assert(system.cancelReservation("RES_1"));
+    assert(system.getAvailableRooms(40, start, end).size() == 1);
 
-    // Test setter with a valid value
-    room1.setCapacity(20);
-    assert(room1.getCapacity() == 20);
-
-    // Test setter with an invalid value
-    room1.setCapacity(30);
-
-    // Assumes an invalid setter value leaves capacity unchanged
-    assert(room1.getCapacity() == 20);
-
-    // Store rooms in a vector
-    vector<Room> rooms;
-    rooms.push_back(room1);
-    rooms.push_back(room2);
-    rooms.push_back(room3);
-
-    // Search rooms by requested capacity
-    cout << "---------------------------------------------------------------" << endl;
-    cout << "Enter capacity: ";
-
-    int requestedCapacity;
-    cin >> requestedCapacity;
-
-    // Validate user input
-    if (cin.fail() || requestedCapacity <= 0) {
-        cout << "Please enter a valid positive capacity." << endl;
-        return 1;
-    }
-
-    bool found = false;
-
-    cout << "Rooms that can accommodate " << requestedCapacity
-         << " people:" << endl;
-
-    for (const Room& room : rooms) {
-        if (room.canAccommodate(requestedCapacity)) {
-            room.displayRoom();
-            cout << endl;
-            found = true;
-        }
-    }
-
-    if (!found) {
-        cout << "There is no available room for capacity of "
-             << requestedCapacity << "." << endl;
-    }
-
-    cout << "---------------------------------------------------------------" << endl;
-
-    cout << "All Room tests passed!" << endl;
-
-    return 0;
+    cout << "All Room tests passed!\n";
 }
