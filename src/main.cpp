@@ -247,11 +247,11 @@ void makeReservation(const User& user, const vector<Room>& rooms,
 }
 
 void cancelReservation(const User& user, bool admin,
-                       ReservationManagementSystem& reservations) {
+                       ReservationManagementSystem& reservations, bool deleteRecord = false) {
     bool found = false;
     for (const auto& entry : reservations.getReservations()) {
         const Reservation& reservation = entry.second;
-        if (reservation.getStatus() != ReservationStatus::Cancelled &&
+        if ((deleteRecord || reservation.getStatus() != ReservationStatus::Cancelled) &&
             (admin || reservation.getOwnerID() == user.getUserID())) {
             cout << entry.first << " | Room: " << reservation.getRoomID()
                       << " | User: " << reservation.getOwnerID() << '\n';
@@ -259,22 +259,24 @@ void cancelReservation(const User& user, bool admin,
         }
     }
     if (!found) {
-        cout << "No reservations available to cancel.\n";
+        cout << "No matching reservations available.\n";
         return;
     }
     string id;
-    if (!readInput("Reservation ID to cancel (or 0 to go back): ", id) || id == "0") {
+    if (!readInput(deleteRecord ? "Reservation ID to delete (or 0 to go back): " :
+                   "Reservation ID to cancel (or 0 to go back): ", id) || id == "0") {
         return;
     }
     const auto& records = reservations.getReservations();
     const auto selected = records.find(id);
     if (selected == records.end() ||
-        selected->second.getStatus() == ReservationStatus::Cancelled ||
+        (!deleteRecord && selected->second.getStatus() == ReservationStatus::Cancelled) ||
         (!admin && selected->second.getOwnerID() != user.getUserID())) {
         cout << "Please select one of the listed reservation IDs.\n";
         return;
     }
-    reservations.cancelReservation(id);
+    if (deleteRecord) reservations.deleteReservation(id);
+    else reservations.cancelReservation(id);
 }
 
 void runSession(User& user, UserManagementSystem& users,
@@ -292,7 +294,7 @@ void runSession(User& user, UserManagementSystem& users,
                   << "2. Search available rooms and make a reservation\n"
                   << (admin ? "3. Cancel any reservation\n" : "3. Cancel my reservation\n");
         if (admin) {
-            cout << "4. Manage user accounts\n";
+            cout << "4. Manage user accounts\n5. Delete reservation permanently\n";
         }
         cout << "0. Log out\n";
         if (!readInput("Enter choice: ", choice) || choice == "0") {
@@ -306,6 +308,8 @@ void runSession(User& user, UserManagementSystem& users,
             cancelReservation(currentUser, admin, reservations);
         } else if (choice == "4" && admin) {
             manageUsers(userID, users);
+        } else if (choice == "5" && admin) {
+            cancelReservation(currentUser, admin, reservations, true);
         } else {
             cout << "Invalid choice. Please select a listed option.\n";
         }
@@ -326,9 +330,14 @@ int main() {
         reservations.addRoom(room);
     }
 
+    if (!reservations.loadReservations("data/reservations.txt")) {
+        cerr << "Could not load reservation data. Check data/reservations.txt.\n";
+        return 1;
+    }
+
     cout << "===== CAMPUS ROOM RESERVATION =====\n"
               << "Sign in with an existing User ID to access your role's functions.\n"
-              << "Reservations are kept for this application session only.\n";
+              << "Reservations are loaded and saved automatically.\n";
     while (User* user = login(users)) {
         runSession(*user, users, rooms, reservations);
     }

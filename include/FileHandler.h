@@ -10,12 +10,18 @@
 #include "Student.h"
 #include "Staff.h"
 #include "Admin.h"
+#include "Reservation.h"
 
 
 using namespace std;
 
 class FileHandler {
 public:
+    static bool loadReservations(const string& filename,
+        unordered_map<string, Reservation>& reservations);
+    static bool saveReservations(const string& filename,
+        const unordered_map<string, Reservation>& reservations);
+
     static std::vector<Room> loadRooms(const string& filename);
 
     static bool saveRooms(

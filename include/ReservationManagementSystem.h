@@ -22,9 +22,13 @@ private:
     unordered_map<string, vector<string>> roomReservations;
 
     size_t nextReservationId;
+    string reservationFile;
+    bool saveChanges(const unordered_map<string, Reservation>& updated) const;
 
 public:
     ReservationManagementSystem();
+    // Load saved records, rebuild room indexes, and enable automatic saves.
+    bool loadReservations(const string& filename);
 
     bool isRoomAvailable(const string &roomID, chrono::system_clock::time_point reqStart, chrono::system_clock::time_point
                          reqEnd);

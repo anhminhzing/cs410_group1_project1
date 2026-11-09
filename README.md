@@ -2,6 +2,8 @@
 
 CS410 Group 1 project: a C++17 console application for finding and reserving university rooms. Students, staff, and administrators log in using an existing user ID. All three roles can browse rooms, search availability, make reservations, and cancel permitted reservations. Administrators can also view, add, edit, and delete user accounts.
 
+For a step-by-step explanation of startup, login, reservations, account management, and file saving, see the [Program Workflow Guide](docs/PROGRAM_WORKFLOW.md).
+
 ## Current features
 
 | Feature | Current behavior |
@@ -13,6 +15,8 @@ CS410 Group 1 project: a C++17 console application for finding and reserving uni
 | Prevent booking conflicts | Rejects overlapping bookings for the same room. Adjacent bookings are allowed. |
 | Cancel a reservation | Lists permitted non-cancelled bookings and marks the selected booking as cancelled, freeing its time slot. |
 | Manage users | Admins can inspect full account details, create accounts, replace account details/roles, and delete other accounts. |
+| Save reservations | Loads `data/reservations.txt` at startup and saves creation, cancellation, and deletion immediately. |
+| Delete reservations | Admin menu option **5** permanently removes a selected reservation from memory and disk. |
 | Save account changes | Writes user changes to `data/users.txt`; failed saves leave the live accounts unchanged. |
 | Switch accounts | Logging out returns to login without discarding reservations created during the current process. |
 
@@ -24,6 +28,7 @@ CS410 Group 1 project: a C++17 console application for finding and reserving uni
 | Search and reserve rooms | Yes | Yes | Yes |
 | Cancel reservations | Own bookings | Own bookings | Any booking |
 | View full user details | No | No | Yes |
+| Permanently delete reservations | No | No | Yes |
 | Add, edit, and delete accounts | No | No | Yes |
 
 The login screen shows a basic account list for demonstration. Login uses an ID only; passwords and university identity-provider authentication are not implemented.
@@ -68,6 +73,7 @@ The main role menu provides:
 2. Search available rooms and make a reservation
 3. Cancel my reservation / Cancel any reservation
 4. Manage user accounts  (Admin only)
+5. Delete reservation permanently  (Admin only)
 0. Log out
 ```
 
@@ -102,7 +108,7 @@ An existing booking from `10:00` to `11:00` prevents another booking from `10:30
 
 Select **3** from the role menu. Students and staff see only their own non-cancelled reservations; admins see all non-cancelled reservations. Enter a listed reservation ID to cancel it. The cancellation list includes the reservation ID, room ID, and owner ID.
 
-Cancellation changes the reservation's status to `Cancelled`; it does not delete its record. Reservations are stored in memory and survive logouts within the same process, but disappear when the program exits. Reservation IDs restart with a new process.
+Cancellation changes the reservation's status to `Cancelled` and saves that status; it does not delete its record. Admins can use **5. Delete reservation permanently** to remove any listed reservation, including cancelled ones. Both operations update `data/reservations.txt`. Reservations and conflict checks survive restarts. New IDs continue beyond the largest ID in the loaded records; deleted IDs may be reused after a restart if they were above every remaining ID.
 
 ## Admin user-management workflow
 
@@ -163,13 +169,13 @@ The Week 7.2 slides (slide 35) require a vertical slice tied to a user story, a 
 
 1. Start `make run`, log in as `S001`, and view the rooms.
 2. Select **2**. Enter `11/10/2026`, `10:00`, `11:00`, and `5` attendees, then select `R101`.
-3. Verify the generated ID (`RES_1` in a fresh process).
+3. Verify the generated ID (for example, `RES_1` when the saved file was empty).
 4. Search again for the same date, `10:30`–`11:30`, and `5` attendees. Verify that `R101` is unavailable.
 5. Log out and log in as `T001`. Select **3** and verify that the student's booking is not listed.
 6. Log out and log in as `A001`. Select **3** and cancel the student's reservation using its ID.
 7. Repeat the search and verify that `R101` is available again. Enter `0` at room selection to return without booking.
 
-Use the same process for this demo because reservations are not persisted. `R101` is the suitable bundled demo room; the `R102` data issue is listed below.
+Reservations persist across restarts; choose a different time if an earlier demo booking still occupies the slot. `R101` is the suitable bundled demo room; the `R102` data issue is listed below.
 
 **Account management and persistence:**
 
@@ -199,17 +205,18 @@ The Makefile discovers `tests/test_*.cpp` and runs each as a separate executable
 | [test_student.cpp](tests/test_student.cpp) | Student identity, role, email, and major. |
 | [test_staff.cpp](tests/test_staff.cpp) | Staff identity, role, email, and department. |
 | [test_filehandler.cpp](tests/test_filehandler.cpp) | Loading the bundled rooms/users and role-specific fields. |
+| [test_reservation_persistence.cpp](tests/test_reservation_persistence.cpp) | Startup loading, saved bookings/status, overlap rejection, adjacent intervals, ID continuation, deletion, failed saves, and malformed records. |
 | [test_room.cpp](tests/test_room.cpp) | Room fields and capacity-setter behavior, plus an interactive capacity-search demonstration. |
 
 Individual targets are available: `make test_admin`, `make test_student`, `make test_staff`, `make test_filehandler`, and `printf '5\n' | make test_room`.
 
 ### Missing automated workflow coverage
 
-The existing five test programs check supporting components; they do not yet verify the complete reservation or account-management workflows. File tests depend on the original sample data. For Milestone 3, add meaningful C++ tests tied to the primary reservation story, including:
+The C++ persistence test covers reservation creation, conflicts, cancellation, deletion, restart loading, and failed saves. Console permissions and the complete account-management workflow still need automated coverage. File tests depend on the original sample data. Further coverage for the reservation story should include:
 
-1. A successful booking that records the correct room, owner, interval, and confirmed status.
-2. Rejection of an overlapping booking without creating another reservation; verify that adjacent intervals remain allowed.
-3. Cancellation that frees the time slot, with an ownership/permission check at the application layer.
+1. CLI date and attendee-count validation.
+2. Owner-only cancellation and admin-only permanent deletion.
+3. Restart behavior exercised through the console workflow.
 
 Additional account tests should cover add/edit/delete persistence, duplicate IDs, self-protection, and failed saves. CLI date/capacity/permission rules need a C++ integration harness or extraction into testable application logic. Manual demonstrations do not replace automated tests.
 
@@ -224,7 +231,7 @@ Additional account tests should cover add/edit/delete persistence, duplicate IDs
 | [Room](include/Room.h) | Room identity, type, capacity fields, location, availability flag, display, and attendee-limit check. |
 | [Reservation](include/Reservation.h) | Booking identity, owner, room, time interval, status, and overlap calculation. |
 | [ReservationManagementSystem](include/ReservationManagementSystem.h) | Stores rooms/reservations, indexes bookings by room, generates IDs, checks conflicts, and cancels/deletes reservation records. |
-| [FileHandler](include/FileHandler.h) | Reads room/user files and provides room/user save methods; user saves use a temporary file followed by rename. |
+| [FileHandler](include/FileHandler.h) | Loads and saves room, user, and reservation records. User and reservation saves use a temporary file followed by rename. |
 | `data/` | Sample room and user records. |
 | `tests/` | C++ assertion-based test programs. |
 | [Makefile](Makefile) | Application build, run, individual test, and aggregate test targets. |
@@ -241,13 +248,22 @@ RoomID,Type,Capacity,MaxCapacity,Location,Available
 
 The headings above describe the formats; actual files contain records only, with no headers or comments. User roles are `Student`, `Staff`, and `Admin`. Room types are `Classroom`, `Meeting room`, and `Study room`; availability is `1` or `0`. Quoted CSV values are not supported.
 
-User-account changes persist to disk. Rooms are loaded at startup; the current menu does not edit or save them. Reservations are not written to disk.
+User-account and reservation changes persist to disk. Rooms are loaded at startup; the current menu does not edit or save them.
+
+`data/reservations.txt` contains six fields per record, without a header:
+
+```text
+ReservationID,OwnerID,RoomID,StartEpochSeconds,EndEpochSeconds,Status
+```
+
+Times are whole seconds since the Unix epoch, preserving the saved instant across restarts. Status is `Confirmed`, `CheckedIn`, `CheckedOut`, or `Cancelled`. The bundled file starts empty; bookings populate it automatically. A missing file is initialized empty. Invalid records or unknown room IDs stop startup with an error instead of silently overwriting data. Existing room records must be loaded before `ReservationManagementSystem::loadReservations` is called.
+
+`FileHandler::loadReservations` and `saveReservations` handle text conversion and file I/O. `ReservationManagementSystem` rebuilds its indexes and calls the save function before committing creation, cancellation, or deletion. Standalone systems remain in-memory until `loadReservations(filename)` enables persistence. Direct changes to a `Reservation` object do not automatically save it.
 
 ### Implemented methods without menu actions
 
 The repository also contains functionality below the console interface:
 
-- `ReservationManagementSystem::deleteReservation` removes a record and its room index entry. The console exposes cancellation, not permanent deletion.
 - `Reservation` provides CheckedIn and CheckedOut status methods; no menu invokes them or enforces a status-transition lifecycle.
 - `FileHandler::saveRooms` can serialize room records, and `Room` has attribute setters; there is no admin room-management menu.
 - `Admin::deactivateAccount` is a placeholder. `Room::setType` is declared but has no implementation in this checkout.
@@ -259,7 +275,7 @@ The repository also contains functionality below the console interface:
 | --- | --- |
 | Working vertical slice tied to a story | Reservation creation/cancellation and admin account management are connected through the console. Stories, acceptance criteria, and demos are documented above. |
 | Successful CMake build | **Pending:** only a Makefile is present; add and verify `CMakeLists.txt`. |
-| 2–3 meaningful automated tests for the slice | **Pending workflow coverage:** existing C++ tests cover supporting components; add the reservation success/failure/business-rule cases above. |
+| 2–3 meaningful automated tests for the slice | Reservation persistence tests cover success, overlap rejection, cancellation, deletion, restart loading, and save failures. Console permissions and account workflow tests remain outstanding. |
 | Issue → branch → PR workflow | **Evidence needed:** record real links for the selected story and implementation. |
 | Working CI pipeline | [ci.yml](.github/workflows/ci.yml) builds and tests with Make on pushes/PRs and manual runs. **Pending:** verify a successful GitHub run, and migrate to CMake/CTest when configured. |
 | Updated README | Full feature descriptions, build/run/test instructions, stories, demos, architecture, and known limitations are included. |
@@ -277,7 +293,7 @@ Use focused feature branches tied to issues, reference those issues in PRs, requ
 
 - ID-only login is a demonstration mechanism. Production authentication, network access, and online service availability are future work.
 - Reservation modification, admin room creation/editing/removal, and event reporting are not available through the console.
-- User deletion does not cancel or remove that user's in-memory reservations. Admin cancellation remains available.
+- User deletion does not cancel or remove that user's saved reservations. Admin cancellation remains available.
 - Date/time, attendee count, and cancellation ownership checks live in the console workflow; the reservation API does not independently enforce all those rules.
 - Dates use the machine's local time zone. The console does not require bookings to be in the future.
 - Room loading assumes valid numeric fields and does not provide robust malformed-file recovery. The bundled `R102` row has an extra comma-separated field, so its location and availability are misread. Correct that fixture separately before using it for a demo.
