@@ -45,7 +45,7 @@ make run
 
 `make all` builds `build/main`; `make run` builds it if needed and starts it. You can also run `./build/main` from the repository root. To select another compiler, use `make CXX=clang++ all`.
 
-This checkout currently uses a Makefile. CMake configuration and CI are still needed for Milestone 3; CMake commands are not yet available.
+This checkout currently uses a Makefile. The GitHub Actions workflow in `.github/workflows/ci.yml` builds and tests with Make on pushes and pull requests, and supports manual runs. Commit and push the workflow to activate it; inspect results in GitHub’s Actions tab. A successful remote run is not yet recorded. CMake configuration is still needed for Milestone 3; CMake commands are not yet available.
 
 ### Login and menus
 
@@ -261,7 +261,7 @@ The repository also contains functionality below the console interface:
 | Successful CMake build | **Pending:** only a Makefile is present; add and verify `CMakeLists.txt`. |
 | 2–3 meaningful automated tests for the slice | **Pending workflow coverage:** existing C++ tests cover supporting components; add the reservation success/failure/business-rule cases above. |
 | Issue → branch → PR workflow | **Evidence needed:** record real links for the selected story and implementation. |
-| Working CI pipeline | **Pending locally:** no `.github/workflows/` configuration is present. Configure with CMake, build, and run registered C++ tests. |
+| Working CI pipeline | [ci.yml](.github/workflows/ci.yml) builds and tests with Make on pushes/PRs and manual runs. **Pending:** verify a successful GitHub run, and migrate to CMake/CTest when configured. |
 | Updated README | Full feature descriptions, build/run/test instructions, stories, demos, architecture, and known limitations are included. |
 
 Record actual submission evidence here; remote issue, review, and CI status has not been verified:
@@ -281,7 +281,7 @@ Use focused feature branches tied to issues, reference those issues in PRs, requ
 - Date/time, attendee count, and cancellation ownership checks live in the console workflow; the reservation API does not independently enforce all those rules.
 - Dates use the machine's local time zone. The console does not require bookings to be in the future.
 - Room loading assumes valid numeric fields and does not provide robust malformed-file recovery. The bundled `R102` row has an extra comma-separated field, so its location and availability are misread. Correct that fixture separately before using it for a demo.
-- CMake, CI, reservation workflow tests, and account workflow tests remain submission work as described above.
+- CMake, successful remote CI evidence, reservation workflow tests, and account workflow tests remain submission work as described above.
 
 The broader stakeholders include students, faculty/staff, student organization leaders, facilities staff, administrators, IT support, and event attendees. The current account model implements only Student, Staff, and Admin; facilities preparation views, event discovery, and monitoring remain backlog items.
 
