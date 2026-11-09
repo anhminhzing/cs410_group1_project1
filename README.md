@@ -9,7 +9,7 @@ For a step-by-step explanation of startup, login, reservations, account manageme
 | Feature | Current behavior |
 | --- | --- |
 | ID-based login | Displays available account IDs, names, and roles; retries unknown IDs and opens the appropriate role menu. |
-| View rooms | Displays each room's ID, type, capacity, maximum capacity, location, and availability flag. |
+| View rooms | Displays each room's ID, type, maximum capacity, location, and availability flag. |
 | Search available rooms | Filters by date, start/end time, required attendees, room availability flag, and existing bookings. |
 | Make a reservation | Books one of the displayed rooms for the logged-in user and prints a generated ID such as `RES_1`. |
 | Prevent booking conflicts | Rejects overlapping bookings for the same room. Adjacent bookings are allowed. |
@@ -92,7 +92,7 @@ Enter `0` at login to exit. In the cancellation or room-selection prompt, `0` re
 
 The console rejects invalid dates/times, end times that are not after start times, nonpositive or nonnumeric attendee counts, and IDs outside the available results. A booking uses one date for both start and end; overnight bookings cannot be entered through this menu.
 
-The capacity filter uses `Room::canAccommodate`, which compares the attendee count with the room's **maximum capacity** (`maxcapacity`). The separate `capacity` field is also displayed but is not the CLI's booking limit.
+The capacity filter uses `Room::canAccommodate`, which compares the requested attendee count with the room's single size property, **`maxCapacity`**. `getMaxCapacity()` reads this limit; `setMaxCapacity()` updates it.
 
 ### Conflict detection
 
@@ -175,7 +175,7 @@ The Week 7.2 slides (slide 35) require a vertical slice tied to a user story, a 
 6. Log out and log in as `A001`. Select **3** and cancel the student's reservation using its ID.
 7. Repeat the search and verify that `R101` is available again. Enter `0` at room selection to return without booking.
 
-Reservations persist across restarts; choose a different time if an earlier demo booking still occupies the slot. `R101` is the suitable bundled demo room; the `R102` data issue is listed below.
+Reservations persist across restarts; choose a different time if an earlier demo booking still occupies the slot. Both `R101` and `R102` are enabled in the bundled data.
 
 **Account management and persistence:**
 
@@ -186,7 +186,7 @@ Reservations persist across restarts; choose a different time if an earlier demo
 5. Exit and restart the application; verify that the edited account still exists.
 6. Delete `S900` as admin and verify that it can no longer log in. Also demonstrate rejection of an existing ID such as `S001` when adding an account.
 
-This second demo modifies `data/users.txt`. Remove the demo account afterward. Existing file tests expect the original sample records.
+This second demo modifies `data/users.txt`. Remove the demo account afterward. FileHandler tests use isolated temporary records and do not depend on this demo data.
 
 ## C++ tests
 
@@ -194,25 +194,25 @@ All test sources are C++. Tests use standard `assert` statements with no externa
 
 ```sh
 make all
-printf '5\n' | make test-all
+make test-all
 ```
 
-The Makefile discovers `tests/test_*.cpp` and runs each as a separate executable. `test_room` requests a positive attendee count; piping `5` provides its input. `make all` builds the application without running tests.
+The Makefile discovers `tests/test_*.cpp` and runs each as a separate executable. All tests run without interactive input. `make all` builds the application without running tests.
 
 | Test file | Existing coverage |
 | --- | --- |
 | [test_admin.cpp](tests/test_admin.cpp) | Admin identity, role, email, and office. |
 | [test_student.cpp](tests/test_student.cpp) | Student identity, role, email, and major. |
 | [test_staff.cpp](tests/test_staff.cpp) | Staff identity, role, email, and department. |
-| [test_filehandler.cpp](tests/test_filehandler.cpp) | Loading the bundled rooms/users and role-specific fields. |
+| [test_filehandler.cpp](tests/test_filehandler.cpp) | Temporary-file loading and saving for rooms/users/reservations, all reservation statuses, malformed records, missing/empty files, and failed saves. |
 | [test_reservation_persistence.cpp](tests/test_reservation_persistence.cpp) | Startup loading, saved bookings/status, overlap rejection, adjacent intervals, ID continuation, deletion, failed saves, and malformed records. |
-| [test_room.cpp](tests/test_room.cpp) | Room fields and capacity-setter behavior, plus an interactive capacity-search demonstration. |
+| [test_room.cpp](tests/test_room.cpp) | Maximum-capacity boundaries and setter, enabled/disabled rooms, and availability search with conflicts, adjacent bookings, and cancellation. |
 
-Individual targets are available: `make test_admin`, `make test_student`, `make test_staff`, `make test_filehandler`, and `printf '5\n' | make test_room`.
+Individual targets are available: `make test_admin`, `make test_student`, `make test_staff`, `make test_filehandler`, and `make test_room`.
 
 ### Missing automated workflow coverage
 
-The C++ persistence test covers reservation creation, conflicts, cancellation, deletion, restart loading, and failed saves. Console permissions and the complete account-management workflow still need automated coverage. File tests depend on the original sample data. Further coverage for the reservation story should include:
+The C++ persistence test covers reservation creation, conflicts, cancellation, deletion, restart loading, and failed saves. Console permissions and the complete account-management workflow still need automated coverage. FileHandler tests use temporary data and clean up after themselves. Further coverage for the reservation story should include:
 
 1. CLI date and attendee-count validation.
 2. Owner-only cancellation and admin-only permanent deletion.
@@ -228,7 +228,7 @@ Additional account tests should cover add/edit/delete persistence, duplicate IDs
 | [User](include/User.h) | Abstract identity interface with ID, name, email, setters, and virtual role lookup. |
 | [Student](include/Student.h), [Staff](include/Staff.h), [Admin](include/Admin.h) | User subclasses with major, department, and office information. |
 | [UserManagementSystem](include/UserManagementSystem.h) | Owns user pointers; provides lookup, addition, deletion, existence checks, and admin detection. The admin console coordinates edit/save operations. |
-| [Room](include/Room.h) | Room identity, type, capacity fields, location, availability flag, display, and attendee-limit check. |
+| [Room](include/Room.h) | Room identity, type, maximum capacity, location, availability flag, display, and attendee-limit check. |
 | [Reservation](include/Reservation.h) | Booking identity, owner, room, time interval, status, and overlap calculation. |
 | [ReservationManagementSystem](include/ReservationManagementSystem.h) | Stores rooms/reservations, indexes bookings by room, generates IDs, checks conflicts, and cancels/deletes reservation records. |
 | [FileHandler](include/FileHandler.h) | Loads and saves room, user, and reservation records. User and reservation saves use a temporary file followed by rename. |
@@ -242,11 +242,11 @@ Additional account tests should cover add/edit/delete persistence, duplicate IDs
 # data/users.txt (five comma-separated fields)
 Role,UserID,Name,Email,MajorOrDepartmentOrOffice
 
-# data/rooms.txt (six comma-separated fields)
-RoomID,Type,Capacity,MaxCapacity,Location,Available
+# data/rooms.txt (five comma-separated fields)
+RoomID,Type,MaxCapacity,Location,Available
 ```
 
-The headings above describe the formats; actual files contain records only, with no headers or comments. User roles are `Student`, `Staff`, and `Admin`. Room types are `Classroom`, `Meeting room`, and `Study room`; availability is `1` or `0`. Quoted CSV values are not supported.
+The headings above describe the formats; actual files contain records only, with no headers or comments. User roles are `Student`, `Staff`, and `Admin`. Room types are `Classroom`, `Meeting room`, and `Study room`; availability is `1` or `0`. Quoted CSV values are not supported. The room format now has five fields: remove the old `Capacity` column from any external room files before using them; keep the former `MaxCapacity` value.
 
 User-account and reservation changes persist to disk. Rooms are loaded at startup; the current menu does not edit or save them.
 
@@ -267,7 +267,6 @@ The repository also contains functionality below the console interface:
 - `Reservation` provides CheckedIn and CheckedOut status methods; no menu invokes them or enforces a status-transition lifecycle.
 - `FileHandler::saveRooms` can serialize room records, and `Room` has attribute setters; there is no admin room-management menu.
 - `Admin::deactivateAccount` is a placeholder. `Room::setType` is declared but has no implementation in this checkout.
-- `ReservationManagementSystem::getAvailableRooms` exists but has an invalid iterator-condition path. The CLI performs its own filtering and uses `isRoomAvailable` instead.
 
 ## Milestone 3 evidence and remaining work
 
@@ -287,7 +286,7 @@ Record actual submission evidence here; remote issue, review, and CI status has 
 - Reviewed pull request: **Not recorded**
 - Successful CI run for the submitted revision: **Not recorded**
 
-Use focused feature branches tied to issues, reference those issues in PRs, request teammate review, and merge after required checks pass. When CMake/CTest are added, register the C++ tests, set the data working directory, and supply or remove interactive test input. At sprint review, show the story, running feature, automated tests, reviewed PR, and green CI. Record retrospective findings separately, including one improvement for the next sprint.
+Use focused feature branches tied to issues, reference those issues in PRs, request teammate review, and merge after required checks pass. When CMake/CTest are added, register the C++ tests, set the data working directory, and keep tests noninteractive. At sprint review, show the story, running feature, automated tests, reviewed PR, and green CI. Record retrospective findings separately, including one improvement for the next sprint.
 
 ## Known limitations and future work
 
@@ -296,7 +295,7 @@ Use focused feature branches tied to issues, reference those issues in PRs, requ
 - User deletion does not cancel or remove that user's saved reservations. Admin cancellation remains available.
 - Date/time, attendee count, and cancellation ownership checks live in the console workflow; the reservation API does not independently enforce all those rules.
 - Dates use the machine's local time zone. The console does not require bookings to be in the future.
-- Room loading assumes valid numeric fields and does not provide robust malformed-file recovery. The bundled `R102` row has an extra comma-separated field, so its location and availability are misread. Correct that fixture separately before using it for a demo.
+- Room loading assumes valid numeric fields and does not provide robust malformed-file recovery.
 - CMake, successful remote CI evidence, reservation workflow tests, and account workflow tests remain submission work as described above.
 
 The broader stakeholders include students, faculty/staff, student organization leaders, facilities staff, administrators, IT support, and event attendees. The current account model implements only Student, Staff, and Admin; facilities preparation views, event discovery, and monitoring remain backlog items.
