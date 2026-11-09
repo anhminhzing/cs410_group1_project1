@@ -1,4 +1,4 @@
-name: C++ CI
+name: C++ Makefile CI
 
 on:
   push:
@@ -14,10 +14,6 @@ jobs:
     timeout-minutes: 10
 
     steps:
-      # clean before building 
-      - name: Clean
-        run: make BUILD_DIR=ci-build clean
-
       - name: Check out source
         uses: actions/checkout@v4
 
@@ -26,10 +22,14 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y make g++
 
-      # Avoid reusing binaries or object files committed in build/.
-      - name: Build
-        run: make BUILD_DIR=ci-build all
+      # Remove committed binaries and objects before compiling on Linux.
+      - name: Clean previous build
+        run: make clean
+
+      # Use the compiler, flags, sources, and build directory in Makefile.
+      - name: Build application
+        run: make all
 
       # test_room reads a positive capacity from standard input.
-      - name: Test
-        run: printf '5\n' | make BUILD_DIR=ci-build test-all
+      - name: Run C++ tests
+        run: printf '5\n' | make test-all
