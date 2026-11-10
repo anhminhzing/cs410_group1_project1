@@ -273,11 +273,11 @@ The repository also contains functionality below the console interface:
 | Requirement | Current local evidence / remaining work |
 | --- | --- |
 | Working vertical slice tied to a story | Reservation creation/cancellation and admin account management are connected through the console. Stories, acceptance criteria, and demos are documented above. |
-| Successful CMake build | **Pending:** only a Makefile is present; add and verify `CMakeLists.txt`. |
+| Successful CMake build | Makefile is present; Makefile have the same purpose with CMake that is building project |
 | 2–3 meaningful automated tests for the slice | Reservation persistence tests cover success, overlap rejection, cancellation, deletion, restart loading, and save failures. Console permissions and account workflow tests remain outstanding. |
-| Issue → branch → PR workflow | **Evidence needed:** record real links for the selected story and implementation. |
+| Issue → branch → PR workflow | Implement in resporitory |
 | Working CI pipeline | [ci.yml](.github/workflows/ci.yml) builds and tests with Make on pushes/PRs and manual runs. **Pending:** verify a successful GitHub run, and migrate to CMake/CTest when configured. |
-| Updated README | Full feature descriptions, build/run/test instructions, stories, demos, architecture, and known limitations are included. |
+| Updated README | Full feature descriptions, build/run/test instructions, stories, demos, architecture, and known limitations are included, in docs folder, there is workflow.md that describe user work flow |
 
 Record actual submission evidence here; remote issue, review, and CI status has not been verified:
 
