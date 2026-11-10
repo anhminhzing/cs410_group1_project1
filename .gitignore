@@ -1,0 +1,21 @@
+# CMake generated files
+/build/
+/cmake-build/
+
+# Compiled binaries
+*.exe
+*.obj
+*.o
+
+# Visual Studio
+.vs/
+
+# VS Code
+.vscode/
+
+# JetBrains / CLion
+.idea/
+
+# Operating system files
+.DS_Store
+Thumbs.db
