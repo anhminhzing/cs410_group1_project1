@@ -43,6 +43,10 @@ The login screen shows a basic account list for demonstration. Login uses an ID 
 
 Run commands from the repository root because data paths are relative to the working directory:
 
+
+## Makefile build and run
+
+
 ```sh
 make all
 make run
@@ -50,7 +54,17 @@ make run
 
 `make all` builds `build/main`; `make run` builds it if needed and starts it. You can also run `./build/main` from the repository root. To select another compiler, use `make CXX=clang++ all`.
 
-This checkout currently uses a Makefile. The GitHub Actions workflow in `.github/workflows/ci.yml` builds and tests with Make on pushes and pull requests, and supports manual runs. Commit and push the workflow to activate it; inspect results in GitHub’s Actions tab. A successful remote run is not yet recorded. CMake configuration is still needed for Milestone 3; CMake commands are not yet available.
+
+## CMake build and run
+
+cmake -S . -B build-cmake
+cmake --build build-cmake --parallel
+.\build-cmake\campus_reservation.exe
+
+
+`cmake --build build-cmake` builds `build-cmake/campus_reservation.exe`; you can run it using .`\build-cmake\campus_reservation.exe` from the repository root. To select another compiler, configure CMake with `-DCMAKE_CXX_COMPILER=clang++`
+
+This checkout currently uses a Makefile/CMake. The GitHub Actions workflow in `.github/workflows/ci.yml` builds and tests with Make on pushes and pull requests, and supports manual runs. Commit and push the workflow to activate it; inspect results in GitHub’s Actions tab. A successful remote run is not yet recorded. 
 
 ### Login and menus
 
@@ -192,9 +206,17 @@ This second demo modifies `data/users.txt`. Remove the demo account afterward. F
 
 All test sources are C++. Tests use standard `assert` statements with no external testing framework. Do not define `NDEBUG`, which disables assertions.
 
+## Makefile tests
+
 ```sh
 make all
 make test-all
+```
+
+## CMake tests
+
+```sh
+ctest --test-dir build-cmake --output-on-failure
 ```
 
 The Makefile discovers `tests/test_*.cpp` and runs each as a separate executable. All tests run without interactive input. `make all` builds the application without running tests.
