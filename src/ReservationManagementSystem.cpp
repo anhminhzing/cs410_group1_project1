@@ -66,6 +66,24 @@ void ReservationManagementSystem::addRoom(const Room& room) {
     rooms[room.getRoomID()] = room;
 }
 
+bool ReservationManagementSystem::removeRoom(const string& roomID) {
+    auto roomIt = rooms.find(roomID);
+
+    if (roomIt == rooms.end()) {
+        return false;
+    }
+    // Do not delete a room if any reservation still references it.
+    for (const auto& entry : reservations) {
+        if (entry.second.getRoomID() == roomID) {
+            return false;
+        }
+    }
+    rooms.erase(roomIt);
+    roomReservations.erase(roomID);
+
+    return true;
+}
+
 bool ReservationManagementSystem::isRoomAvailable(const string &roomID, chrono::system_clock::time_point reqStart, chrono::system_clock::time_point
                                                   reqEnd) {
     auto it = roomReservations.find(roomID);
@@ -176,4 +194,3 @@ vector<Room> ReservationManagementSystem::getAvailableRooms(
 
     return availableRooms;
 }
-

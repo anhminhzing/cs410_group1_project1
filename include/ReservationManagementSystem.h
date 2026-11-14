@@ -41,6 +41,7 @@ public:
     }
 
     void addRoom(const Room& room);
+    bool removeRoom(const string& roomID);
 
     vector<Room> getAvailableRooms(
         int requiredCapacity,

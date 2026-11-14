@@ -279,8 +279,299 @@ void cancelReservation(const User& user, bool admin,
     else reservations.cancelReservation(id);
 }
 
+bool readRoomType(RoomType& type) {
+    string choice;
+
+    cout << "\nRoom types:\n"
+         << "1. Classroom\n"
+         << "2. Meeting room\n"
+         << "3. Study room\n";
+
+    if (!readInput("Enter room type: ", choice)) {
+        return false;
+    }
+
+    if (choice == "1") {
+        type = RoomType::CLASSROOM;
+    } else if (choice == "2") {
+        type = RoomType::MEETING_ROOM;
+    } else if (choice == "3") {
+        type = RoomType::STUDY_ROOM;
+    } else {
+        cout << "Invalid room type.\n";
+        return false;
+    }
+
+    return true;
+}
+
+bool readRoomAvailability(bool& available) {
+    string choice;
+
+    if (!readInput("Available? (1 = Yes, 0 = No): ", choice)) {
+        return false;
+    }
+
+    if (choice == "1") {
+        available = true;
+    } else if (choice == "0") {
+        available = false;
+    } else {
+        cout << "Invalid availability value.\n";
+        return false;
+    }
+
+    return true;
+}
+
+void addRoom(vector<Room>& rooms,
+             ReservationManagementSystem& reservations) {
+    string roomID;
+
+    if (!readField("Enter new Room ID (or 0 to go back): ", roomID)
+        || roomID == "0") {
+        return;
+    }
+
+    auto existing = find_if(
+        rooms.begin(),
+        rooms.end(),
+        [&roomID](const Room& room) {
+            return room.getRoomID() == roomID;
+        });
+
+    if (existing != rooms.end()) {
+        cout << "A room with that ID already exists.\n";
+        return;
+    }
+
+    RoomType type;
+
+    if (!readRoomType(type)) {
+        return;
+    }
+
+    string capacityText;
+    int maxCapacity;
+
+    if (!readInput("Enter maximum capacity: ", capacityText)) {
+        return;
+    }
+
+    if (!parsePositiveInt(capacityText, maxCapacity)) {
+        cout << "Maximum capacity must be a positive whole number. \n";
+        return;
+    }
+
+    string location;
+
+    if (!readField("Enter location: ", location)) {
+        return;
+    }
+
+    bool available;
+
+    if (!readRoomAvailability(available)) {
+        return;
+    }
+
+    Room newRoom(
+        roomID,
+        type,
+        maxCapacity,
+        location,
+        available
+    );
+
+    vector<Room> updatedRooms = rooms;
+    updatedRooms.push_back(newRoom);
+
+    if (!FileHandler::saveRooms("data/rooms.txt", updatedRooms)) {
+        cout << "Room could not be saved.\n";
+        return;
+    }
+
+    rooms = updatedRooms;
+    reservations.addRoom(newRoom);
+
+    cout << "Room " << roomID << " added successfully.\n";
+}
+
+void editRoom(vector<Room>& rooms,
+              ReservationManagementSystem& reservations) {
+    string roomID;
+
+    if (!readInput("Enter Room ID to edit (or 0 to go back): ", roomID)
+        || roomID == "0") {
+        return;
+    }
+
+    auto roomIt = find_if(
+        rooms.begin(),
+        rooms.end(),
+        [&roomID](const Room& room) {
+            return room.getRoomID() == roomID;
+        });
+
+    if (roomIt == rooms.end()) {
+        cout << "Room not found.\n";
+        return;
+    }
+
+    RoomType type;
+
+    if (!readRoomType(type)) {
+        return;
+    }
+
+    string capacityText;
+    int maxCapacity;
+
+    if (!readInput("Enter new maximum capacity: ", capacityText)) {
+        return;
+    }
+
+    if (!parsePositiveInt(capacityText, maxCapacity)) {
+        cout << "Maximum capacity must be a positive whole number.\n";
+        return;
+    }
+
+    string location;
+
+    if (!readField("Enter new location: ", location)) {
+        return;
+    }
+
+    bool available;
+
+    if (!readRoomAvailability(available)) {
+        return;
+    }
+
+    Room updatedRoom(
+        roomID,
+        type,
+        maxCapacity,
+        location,
+        available
+    );
+
+    vector<Room> updatedRooms = rooms;
+
+    const size_t index =
+        static_cast<size_t>(distance(rooms.begin(), roomIt));
+
+    updatedRooms[index] = updatedRoom;
+
+    if (!FileHandler::saveRooms("data/rooms.txt", updatedRooms)) {
+        cout << "Room changes could not be saved.\n";
+        return;
+    }
+
+    rooms = updatedRooms;
+
+    // Replaces the existing room in ReservationManagementSystem
+    // because the room ID stays the same.
+    reservations.addRoom(updatedRoom);
+
+    cout << "Room " << roomID << " updated successfully.\n";
+}
+
+void deleteRoom(vector<Room>& rooms,
+                ReservationManagementSystem& reservations) {
+    string roomID;
+
+    if (!readInput("Enter Room ID to delete (or 0 to go back): ", roomID)
+        || roomID == "0") {
+        return;
+    }
+
+    auto roomIt = find_if(
+        rooms.begin(),
+        rooms.end(),
+        [&roomID](const Room& room) {
+            return room.getRoomID() == roomID;
+        });
+
+    if (roomIt == rooms.end()) {
+        cout << "Room not found.\n";
+        return;
+    }
+
+    Room removedRoom = *roomIt;
+
+    // Do not delete rooms that are still referenced by reservations.
+    if (!reservations.removeRoom(roomID)) {
+        cout << "Room cannot be deleted because it has existing "
+                "reservation records.\n";
+        return;
+    }
+
+    vector<Room> updatedRooms = rooms;
+
+    updatedRooms.erase(
+        remove_if(
+            updatedRooms.begin(),
+            updatedRooms.end(),
+            [&roomID](const Room& room) {
+                return room.getRoomID() == roomID;
+            }),
+        updatedRooms.end()
+    );
+
+    if (!FileHandler::saveRooms("data/rooms.txt", updatedRooms)) {
+        // Restore the room in memory if saving fails.
+        reservations.addRoom(removedRoom);
+
+        cout << "Room could not be deleted from the data file.\n";
+        return;
+    }
+
+    rooms = updatedRooms;
+
+    cout << "Room " << roomID << " deleted successfully.\n";
+}
+
+
+void manageRooms(const string& adminID,
+                 UserManagementSystem& users,
+                 vector<Room>& rooms,
+                 ReservationManagementSystem& reservations) {
+    if (!users.isAdmin(adminID)) {
+        return;
+    }
+
+    string choice;
+
+    while (cin) {
+        cout << "\n===== ROOM MANAGEMENT =====\n"
+             << "1. View rooms\n"
+             << "2. Add room\n"
+             << "3. Edit room\n"
+             << "4. Delete room\n"
+             << "0. Back\n";
+
+        if (!readInput("Enter choice: ", choice) || choice == "0") {
+            return;
+        }
+
+        if (choice == "1") {
+            showRooms(rooms);
+        } else if (choice == "2") {
+            addRoom(rooms, reservations);
+        } else if (choice == "3") {
+            editRoom(rooms, reservations);
+        } else if (choice == "4") {
+            deleteRoom(rooms, reservations);
+        } else {
+            cout << "Invalid choice. Please select a listed option.\n";
+        }
+    }
+}
+
+
 void runSession(User& user, UserManagementSystem& users,
-                const vector<Room>& rooms,
+                vector<Room>& rooms,
                 ReservationManagementSystem& reservations) {
     const bool admin = users.isAdmin(user.getUserID());
     const string userID = user.getUserID();
@@ -294,7 +585,9 @@ void runSession(User& user, UserManagementSystem& users,
                   << "2. Search available rooms and make a reservation\n"
                   << (admin ? "3. Cancel any reservation\n" : "3. Cancel my reservation\n");
         if (admin) {
-            cout << "4. Manage user accounts\n5. Delete reservation permanently\n";
+            cout << "4. Manage user accounts\n"
+                 << "5. Delete reservation permanently\n"
+                 << "6. Manage rooms\n";
         }
         cout << "0. Log out\n";
         if (!readInput("Enter choice: ", choice) || choice == "0") {
@@ -310,6 +603,8 @@ void runSession(User& user, UserManagementSystem& users,
             manageUsers(userID, users);
         } else if (choice == "5" && admin) {
             cancelReservation(currentUser, admin, reservations, true);
+        } else if (choice == "6" && admin) {
+            manageRooms(userID, users, rooms, reservations);
         } else {
             cout << "Invalid choice. Please select a listed option.\n";
         }
@@ -324,7 +619,7 @@ int main() {
         cerr << "No user accounts could be loaded from data/users.txt.\n";
         return 1;
     }
-    const vector<Room> rooms = FileHandler::loadRooms("data/rooms.txt");
+    vector<Room> rooms = FileHandler::loadRooms("data/rooms.txt");
     ReservationManagementSystem reservations;
     for (const Room& room : rooms) {
         reservations.addRoom(room);
