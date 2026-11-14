@@ -6,7 +6,29 @@
 #include <iostream>
 #include <cstdio>
 
+// Include the filesystem header for file operations in windows
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+#include <windows.h>
+#endif
+
 using namespace std;
+
+// Helper function to replace a file with a temporary file to support Windows atomic file replacement
+namespace {
+    bool replaceFile(const string& temporary, const string& filename) {
+#ifdef _WIN32
+        return MoveFileExW(
+            filesystem::path(temporary).c_str(),
+            filesystem::path(filename).c_str(),
+            MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH
+        ) != 0;
+#else
+        return rename(temporary.c_str(), filename.c_str()) == 0;
+#endif
+    }
+}
 
 vector<Room> FileHandler::loadRooms(const string& filename) {
     vector<Room> rooms;
@@ -203,7 +225,7 @@ bool FileHandler::saveUsers(
              << user->getName() << ',' << user->getEmail() << ',' << extra << '\n';
     }
     file.close();
-    if (!file || std::rename(temporary.c_str(), filename.c_str()) != 0) {
+    if (!file || !replaceFile(temporary, filename)) {
         std::remove(temporary.c_str());
         return false;
     }
@@ -286,7 +308,7 @@ bool FileHandler::saveReservations(
              << ',' << status << '\n';
     }
     file.close();
-    if (!file || std::rename(temporary.c_str(), filename.c_str()) != 0) {
+    if (!file || !replaceFile(temporary, filename)) {
         std::remove(temporary.c_str());
         return false;
     }
