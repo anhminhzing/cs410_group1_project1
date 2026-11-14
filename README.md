@@ -43,9 +43,9 @@ The login screen shows a basic account list for demonstration. Login uses an ID 
 
 Run commands from the repository root because data paths are relative to the working directory:
 
-# 
-# Makefile build and run
-# 
+
+## Makefile build and run
+
 
 ```sh
 make all
@@ -54,9 +54,9 @@ make run
 
 `make all` builds `build/main`; `make run` builds it if needed and starts it. You can also run `./build/main` from the repository root. To select another compiler, use `make CXX=clang++ all`.
 
-# 
-# CMake build and run
-# 
+
+## CMake build and run
+
 cmake -S . -B build-cmake
 cmake --build build-cmake --parallel
 .\build-cmake\campus_reservation.exe
@@ -206,16 +206,15 @@ This second demo modifies `data/users.txt`. Remove the demo account afterward. F
 
 All test sources are C++. Tests use standard `assert` statements with no external testing framework. Do not define `NDEBUG`, which disables assertions.
 
-# ==========================================================================================
-# Makefile tests
-# ==========================================================================================
+## Makefile tests
+
 ```sh
 make all
 make test-all
 ```
-# ==========================================================================================
-# Makefile tests
-# ==========================================================================================
+
+## CMake tests
+
 ```sh
 ctest --test-dir build-cmake --output-on-failure
 ```
