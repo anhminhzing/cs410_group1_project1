@@ -1,29 +1,26 @@
+// windows.h must come first so these macros take effect before it is parsed.
 #ifdef _WIN32
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
 #include <windows.h>
 #endif
 
-#include <filesystem>
+#include "FileHandler.h"
 
-#include "../include/FileHandler.h"
-#include <fstream>
-#include <sstream>
-#include <iostream>
 #include <cstdio>
-
-// Include the filesystem header for file operations in windows
 #include <filesystem>
-#ifdef _WIN32
-#define WIN32_LEAN_AND_MEAN
-#define NOMINMAX
-#include <windows.h>
-#endif
+#include <fstream>
+#include <iostream>
+#include <sstream>
 
 using namespace std;
 
-// Helper function to replace a file with a temporary file to support Windows atomic file replacement
+// Replace `filename` with `temporary` in one step (MoveFileExW on Windows,
+// rename elsewhere) so a failed save never leaves a half-written file.
 namespace {
     bool replaceFile(const string& temporary, const string& filename) {
 #ifdef _WIN32
