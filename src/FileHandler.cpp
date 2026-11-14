@@ -324,22 +324,3 @@ bool FileHandler::saveReservations(
   
     return true;
 }
-
-    #ifdef _WIN32
-    const bool replaced = MoveFileExW(
-        std::filesystem::path(temporary).c_str(),
-        std::filesystem::path(filename).c_str(),
-        MOVEFILE_REPLACE_EXISTING
-    ) != 0;
-    #else
-    const bool replaced =
-        std::rename(temporary.c_str(), filename.c_str()) == 0;
-    #endif
-
-    if (!replaced) {
-        std::remove(temporary.c_str());
-        return false;
-    }
-
-    return true;
-}
