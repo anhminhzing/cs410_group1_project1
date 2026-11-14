@@ -43,9 +43,9 @@ The login screen shows a basic account list for demonstration. Login uses an ID 
 
 Run commands from the repository root because data paths are relative to the working directory:
 
-# ==========================================================================================
+# 
 # Makefile build and run
-# ==========================================================================================
+# 
 
 ```sh
 make all
@@ -54,9 +54,9 @@ make run
 
 `make all` builds `build/main`; `make run` builds it if needed and starts it. You can also run `./build/main` from the repository root. To select another compiler, use `make CXX=clang++ all`.
 
-# ==========================================================================================
+# 
 # CMake build and run
-# ==========================================================================================
+# 
 cmake -S . -B build-cmake
 cmake --build build-cmake --parallel
 .\build-cmake\campus_reservation.exe
