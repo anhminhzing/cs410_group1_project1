@@ -111,6 +111,12 @@ bool ReservationManagementSystem::createReservation(const string roomID, const s
         return false;
     }
 
+    // Business rule: a reservation cannot start in the past.
+    if (startTime <= chrono::system_clock::now()) {
+        cout << "Reservations must start in the future." << endl;
+        return false;
+    }
+
     if (!isRoomAvailable(roomID, startTime, endTime)) {
         cout << "Room: " << roomID << " is unavailable at this time" << endl;
         return false;

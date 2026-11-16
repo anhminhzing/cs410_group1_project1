@@ -137,3 +137,17 @@ add_test(
     NAME ReservationPersistenceTest
     COMMAND test_reservation_persistence
 )
+
+# Reservation time rules test
+add_executable(test_reservation_time
+    tests/test_reservation_time.cpp
+)
+
+target_link_libraries(test_reservation_time
+    PRIVATE campus_core
+)
+
+add_test(
+    NAME ReservationTimeTest
+    COMMAND test_reservation_time
+)
