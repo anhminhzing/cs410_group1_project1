@@ -78,6 +78,34 @@ void testRoomLoadAndSave(const TestFiles& files) {
     cout << "Room loading and save/reload passed.\n";
 }
 
+void testRoomFileEdgeCases(const TestFiles& files) {
+    // Windows line endings and blank lines must not change the loaded rooms.
+    files.write("crlf_rooms.txt",
+        "R101,Classroom,30,Library,1\r\n"
+        "\r\n"
+        "R102,Study room,40,Campus Center,1\r\n"
+        "   \n"
+        "R103,Meeting room,20,Science Building,0\r\n");
+    checkRooms(FileHandler::loadRooms(files.path("crlf_rooms.txt")));
+
+    // Invalid records are skipped instead of crashing; valid neighbors still load.
+    files.write("bad_rooms.txt",
+        "R101,Classroom,30,Library,1\n"
+        "R201,Classroom,abc,Library,1\n"  // Non-numeric capacity.
+        "R202,Classroom,,Library,1\n"     // Missing capacity.
+        "R203,Classroom,0,Library,1\n"    // Boundary: zero capacity.
+        "R204,Classroom,-5,Library,1\n"   // Negative capacity.
+        "R205,Classroom,12x,Library,1\n"  // Trailing junk.
+        ",Classroom,10,Library,1\n"       // Missing room ID.
+        "R102,Study room,1,Campus Center,1\n"); // Boundary: smallest valid capacity.
+    const auto rooms = FileHandler::loadRooms(files.path("bad_rooms.txt"));
+    assert(rooms.size() == 2);
+    assert(rooms[0].getRoomID() == "R101");
+    assert(rooms[1].getRoomID() == "R102");
+    assert(rooms[1].getMaxCapacity() == 1);
+    cout << "Room CRLF, blank-line, and invalid-record cases passed.\n";
+}
+
 void checkUsers(UserManagementSystem& users) {
     assert(users.getUsers().size() == 3);
     const auto* student = dynamic_cast<const Student*>(users.getUser("S001"));
@@ -116,6 +144,19 @@ void testUserLoadAndSave(const TestFiles& files) {
     checkUsers(reloaded); // Compare fields, not unordered_map iteration order.
     assert(!filesystem::exists(files.path("saved_users.txt.tmp")));
     cout << "User loading and save/reload passed.\n";
+}
+
+void testUserFileEdgeCases(const TestFiles& files) {
+    files.write("crlf_users.txt",
+        "Student,S001,Test Student,student@example.edu,Computer Science\r\n"
+        "\r\n"
+        "Staff,T001,Test Staff,staff@example.edu,Facilities\r\n"
+        "Admin,A001,Test Admin,admin@example.edu,Main Office\r\n"
+        "Staff,S001,Duplicate,dup@example.edu,Facilities\r\n"); // Duplicate ID.
+    UserManagementSystem users;
+    assert(FileHandler::loadUsers(files.path("crlf_users.txt"), users.getUsers()));
+    checkUsers(users); // No trailing '\r'; first S001 record is kept.
+    cout << "User CRLF, blank-line, and duplicate-ID cases passed.\n";
 }
 
 void testReservationLoadAndSave(const TestFiles& files) {
@@ -211,22 +252,28 @@ void testSaveFailures(const TestFiles& files) {
     assert(!FileHandler::saveReservations(missingDirectory, {}));
 
     // A directory blocks opening the temporary file on all supported systems.
+    files.write("protected_rooms.txt", "original rooms\n");
     files.write("protected_users.txt", "original users\n");
     files.write("protected_reservations.txt", "original reservations\n");
+    assert(filesystem::create_directory(files.path("protected_rooms.txt.tmp")));
     assert(filesystem::create_directory(files.path("protected_users.txt.tmp")));
     assert(filesystem::create_directory(files.path("protected_reservations.txt.tmp")));
+    assert(!FileHandler::saveRooms(files.path("protected_rooms.txt"), {}));
     assert(!FileHandler::saveUsers(files.path("protected_users.txt"), {}));
     assert(!FileHandler::saveReservations(files.path("protected_reservations.txt"), {}));
+    assert(files.read("protected_rooms.txt") == "original rooms\n");
     assert(files.read("protected_users.txt") == "original users\n");
     assert(files.read("protected_reservations.txt") == "original reservations\n");
-    cout << "Save failures preserve existing user/reservation files.\n";
+    cout << "Save failures preserve existing room/user/reservation files.\n";
 }
 } // namespace
 
 int main() {
     const TestFiles files;
     testRoomLoadAndSave(files);
+    testRoomFileEdgeCases(files);
     testUserLoadAndSave(files);
+    testUserFileEdgeCases(files);
     testReservationLoadAndSave(files);
     testInvalidReservations(files);
     testMissingAndEmptyFiles(files);

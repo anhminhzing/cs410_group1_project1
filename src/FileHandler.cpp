@@ -33,6 +33,20 @@ namespace {
         return rename(temporary.c_str(), filename.c_str()) == 0;
 #endif
     }
+
+    // Remove a Windows '\r' left by getline. Returns false for blank lines.
+    bool cleanLine(string& line) {
+        if (!line.empty() && line.back() == '\r') {
+            line.pop_back();
+        }
+        return line.find_first_not_of(" \t") != string::npos;
+    }
+
+    // Accept only a whole, positive number such as "30" (not "", "abc", "3x").
+    bool parseCapacity(const string& text, int& value) {
+        istringstream input(text);
+        return (input >> value) && (input >> ws).eof() && value > 0;
+    }
 }
 
 vector<Room> FileHandler::loadRooms(const string& filename) {
@@ -50,6 +64,9 @@ vector<Room> FileHandler::loadRooms(const string& filename) {
     string line;
 
     while (getline(file, line)) {
+        if (!cleanLine(line)) {
+            continue;
+        }
         stringstream ss(line);
 
         string roomID;
@@ -78,8 +95,11 @@ vector<Room> FileHandler::loadRooms(const string& filename) {
             type = RoomType::CLASSROOM;
         }
 
-        
-        int maxCapacity = stoi(maxCapacityText);
+        int maxCapacity = 0;
+        if (roomID.empty() || !parseCapacity(maxCapacityText, maxCapacity)) {
+            cerr << "Skipping invalid room record: " << line << endl;
+            continue;
+        }
         bool available = (availableText == "1");
 
         Room room(
@@ -102,11 +122,13 @@ bool FileHandler::saveRooms(
     const string& filename,
     const vector<Room>& rooms
 ) {
-    ofstream file(filename);
+    // Write to a temporary file first so a failed save keeps the old rooms.
+    const string temporary = filename + ".tmp";
+    ofstream file(temporary);
 
     if (!file.is_open()) {
         cerr << "Error: could not open "
-                  << filename << endl;
+                  << temporary << endl;
 
         return false;
     }
@@ -117,10 +139,15 @@ bool FileHandler::saveRooms(
              << room.getMaxCapacity() << ","
              << room.getLocation() << ","
              << room.isAvailable()
-             << endl;
+             << '\n';
     }
 
     file.close();
+
+    if (!file || !replaceFile(temporary, filename)) {
+        std::remove(temporary.c_str());
+        return false;
+    }
 
     return true;
 }
@@ -141,7 +168,9 @@ bool FileHandler::loadUsers(
     string line;
 
     while (getline(file, line)) {
-
+        if (!cleanLine(line)) {
+            continue;
+        }
         stringstream ss(line);
 
         string type;
@@ -155,6 +184,12 @@ bool FileHandler::loadUsers(
         getline(ss, name, ',');
         getline(ss, email, ',');
         getline(ss, extraInfo, ',');
+
+        // Keep the first record for an ID; creating a second would leak it.
+        if (users.count(userID) != 0) {
+            std::cerr << "Skipping duplicate user ID: " << userID << std::endl;
+            continue;
+        }
 
         User* user = nullptr;
 
