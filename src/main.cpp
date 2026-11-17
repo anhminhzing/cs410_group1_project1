@@ -215,6 +215,10 @@ void makeReservation(const User& user, const vector<Room>& rooms,
         cout << "End time must be after start time.\n";
         return;
     }
+    if (startTime <= chrono::system_clock::now()) {
+        cout << "Start time must be in the future.\n";
+        return;
+    }
     if (!parsePositiveInt(capacityText, capacity)) {
         cout << "Number of attendees must be a positive whole number.\n";
         return;
