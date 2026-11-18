@@ -59,5 +59,5 @@ int main() {
     assert(!cancelled.loadReservations(badPath));
     assert(cancelled.getReservations().size() == 1);
     filesystem::remove_all(directory);
-    cout << "Reservation persistence tests passed!\n";
+    cout << "-----------------------------------RESERVATION PERSISTENCE TESTS PASSED----------------------------------\n" << endl;
 }

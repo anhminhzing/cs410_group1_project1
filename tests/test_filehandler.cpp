@@ -75,7 +75,7 @@ void testRoomLoadAndSave(const TestFiles& files) {
     checkRooms(rooms);
     assert(FileHandler::saveRooms(files.path("saved_rooms.txt"), rooms));
     checkRooms(FileHandler::loadRooms(files.path("saved_rooms.txt")));
-    cout << "Room loading and save/reload passed.\n";
+    cout << "-----Room loading and save/reload passed.-----\n";
 }
 
 void testRoomFileEdgeCases(const TestFiles& files) {
@@ -97,13 +97,17 @@ void testRoomFileEdgeCases(const TestFiles& files) {
         "R204,Classroom,-5,Library,1\n"   // Negative capacity.
         "R205,Classroom,12x,Library,1\n"  // Trailing junk.
         ",Classroom,10,Library,1\n"       // Missing room ID.
+        "R206,Unknown,10,Library,1\n"      // Unknown room type.
+        "R207,Classroom,10,Library,maybe\n"// Invalid availability value.
+        "R208,Classroom,10,Library\n"      // Missing availability field.
+        "R209,Classroom,10,Library,1,extra\n" // Extra field.
         "R102,Study room,1,Campus Center,1\n"); // Boundary: smallest valid capacity.
     const auto rooms = FileHandler::loadRooms(files.path("bad_rooms.txt"));
     assert(rooms.size() == 2);
     assert(rooms[0].getRoomID() == "R101");
     assert(rooms[1].getRoomID() == "R102");
     assert(rooms[1].getMaxCapacity() == 1);
-    cout << "Room CRLF, blank-line, and invalid-record cases passed.\n";
+    cout << "-----Room CRLF, blank-line, and invalid-record cases passed.-----\n";
 }
 
 void checkUsers(UserManagementSystem& users) {
@@ -143,7 +147,7 @@ void testUserLoadAndSave(const TestFiles& files) {
     assert(FileHandler::loadUsers(files.path("saved_users.txt"), reloaded.getUsers()));
     checkUsers(reloaded); // Compare fields, not unordered_map iteration order.
     assert(!filesystem::exists(files.path("saved_users.txt.tmp")));
-    cout << "User loading and save/reload passed.\n";
+    cout << "-----User loading and save/reload passed.-----\n";
 }
 
 void testUserFileEdgeCases(const TestFiles& files) {
@@ -156,7 +160,21 @@ void testUserFileEdgeCases(const TestFiles& files) {
     UserManagementSystem users;
     assert(FileHandler::loadUsers(files.path("crlf_users.txt"), users.getUsers()));
     checkUsers(users); // No trailing '\r'; first S001 record is kept.
-    cout << "User CRLF, blank-line, and duplicate-ID cases passed.\n";
+
+    // Malformed records should not prevent valid user records from loading.
+    files.write("invalid_users.txt",
+        "Student,S001,Test Student,student@example.edu,Computer Science\n"
+        "Staff,T001,Test Staff,staff@example.edu,Facilities\n"
+        "Admin,A001,Test Admin,admin@example.edu,Main Office\n"
+        "UnknownRole,U001,Unknown User,unknown@example.edu,Somewhere\n" // Unknown role.
+        "Student,,Missing ID,missing@example.edu,Computer Science\n" // Empty ID.
+        "Staff,T002,Missing Department,staff2@example.edu\n" // Missing field.
+        "Admin,A002,Extra Field,admin2@example.edu,Main Office,extra\n"); // Extra field.
+    UserManagementSystem filteredUsers;
+    assert(FileHandler::loadUsers(
+        files.path("invalid_users.txt"), filteredUsers.getUsers()));
+    checkUsers(filteredUsers);
+    cout << "-----User CRLF, blank-line, and duplicate-ID cases passed.-----\n";
 }
 
 void testReservationLoadAndSave(const TestFiles& files) {
@@ -195,7 +213,7 @@ void testReservationLoadAndSave(const TestFiles& files) {
         assert(actual.getStatus() == expected.getStatus());
     }
     assert(!filesystem::exists(files.path("saved_reservations.txt.tmp")));
-    cout << "Reservation fields, statuses, and save/reload passed.\n";
+    cout << "-----Reservation fields, statuses, and save/reload passed.-----\n";
 }
 
 void testInvalidReservations(const TestFiles& files) {
@@ -209,7 +227,13 @@ void testInvalidReservations(const TestFiles& files) {
         "RES_2,S001,R101,abc,1800003600,Confirmed\n",
         "RES_2,S001,R101,1800003600,1800000000,Confirmed\n", // Reversed interval.
         "RES_2,S001,R101,1800000000,1800000000,Confirmed\n", // Zero duration.
+        "RES_2,S001,R101,1800000000abc,1800003600,Confirmed\n", // Trailing junk in timestamp.
+        "RES_2,S001,R101,1800000000,1800003600xyz,Confirmed\n", // Trailing junk in end time.
         "RES_2,S001,R101,1800000000,1800003600,Unknown\n",
+        "RES_2,,R101,1800000000,1800003600,Confirmed\n", // Missing owner ID.
+        ",S001,R101,1800000000,1800003600,Confirmed\n", // Missing reservation ID.
+        "RES_2,S001,,1800000000,1800003600,Confirmed\n", // Missing room ID.
+        "RES_2,S001,R101,1800000000,1800003600,\n", // Empty status.
         "RES_2,,R101,1800000000,1800003600,Confirmed\n",
         valid // Duplicate ID after the valid first row.
     };
@@ -220,7 +244,7 @@ void testInvalidReservations(const TestFiles& files) {
         assert(records.at("RES_1").getOwnerID() == "S001");
         assert(records.at("RES_1").getStatus() == ReservationStatus::Confirmed);
     }
-    cout << "Invalid reservation input preserves loaded records.\n";
+    cout << "-----Invalid reservation input preserves loaded records.-----\n";
 }
 
 void testMissingAndEmptyFiles(const TestFiles& files) {
@@ -242,7 +266,7 @@ void testMissingAndEmptyFiles(const TestFiles& files) {
     assert(files.read("empty_rooms.txt").empty());
     assert(files.read("empty_users.txt").empty());
     assert(files.read("empty_reservations.txt").empty());
-    cout << "Missing and empty file cases passed.\n";
+    cout << "-----Missing and empty file cases passed.-----\n";
 }
 
 void testSaveFailures(const TestFiles& files) {
@@ -264,7 +288,7 @@ void testSaveFailures(const TestFiles& files) {
     assert(files.read("protected_rooms.txt") == "original rooms\n");
     assert(files.read("protected_users.txt") == "original users\n");
     assert(files.read("protected_reservations.txt") == "original reservations\n");
-    cout << "Save failures preserve existing room/user/reservation files.\n";
+    cout << "-----Save failures preserve existing room/user/reservation files.-----\n";
 }
 } // namespace
 
@@ -278,5 +302,5 @@ int main() {
     testInvalidReservations(files);
     testMissingAndEmptyFiles(files);
     testSaveFailures(files);
-    cout << "\nAll FileHandler tests passed!\n";
+    cout << "-----------------------------------FILEHANDLER TESTS PASSED----------------------------------\n" << endl;
 }

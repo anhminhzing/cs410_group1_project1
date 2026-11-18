@@ -17,7 +17,7 @@ int main() {
     assert(admin.getUserType() == "Admin");
     admin.displayAdmin();
 
-    cout << "All Admin tests passed!" << endl;
+    cout << "-----------------------------------ADMIN TESTS PASSED---------------------------------\n" << endl;
 
     return 0;
 }

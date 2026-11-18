@@ -17,7 +17,7 @@ int main() {
     assert(std.getMajor() == "Computer Science");
     assert(std.getUserType() == "Student");
     std.displayStd();
-    cout << "All Student tests passed!" << endl;
+    cout << "-----------------------------------STUDENT TESTS PASSED---------------------------------\n" << endl;
 
     return 0;
 }

@@ -17,7 +17,7 @@ int main() {
 
     staff1.displayStaff();
 
-    cout << "All Staff tests passed!" << endl;
+    cout << "-----------------------------------STAFF TESTS PASSED---------------------------------\n" << endl;
 
     return 0;
 }

@@ -51,13 +51,10 @@ namespace {
 
 vector<Room> FileHandler::loadRooms(const string& filename) {
     vector<Room> rooms;
-
     ifstream file(filename);
 
     if (!file.is_open()) {
-      cerr << "Error: could not open "
-           << filename << std::endl;
-
+        cerr << "Error: could not open " << filename << endl;
         return rooms;
     }
 
@@ -71,17 +68,36 @@ vector<Room> FileHandler::loadRooms(const string& filename) {
 
         string roomID;
         string type_str;
-        RoomType type;
         string maxCapacityText;
         string location;
         string availableText;
+        string extraField;
 
-        getline(ss, roomID, ',');
-        getline(ss, type_str, ',');
-        getline(ss, maxCapacityText, ',');
-        getline(ss, location, ',');
-        getline(ss, availableText, ',');
-        
+        // Read exactly five fields.
+        if (!getline(ss, roomID, ',') ||
+            !getline(ss, type_str, ',') ||
+            !getline(ss, maxCapacityText, ',') ||
+            !getline(ss, location, ',') ||
+            !getline(ss, availableText, ',')) {
+            cerr << "Skipping invalid room record: " << line << endl;
+            continue;
+        }
+
+        // Reject records containing extra fields.
+        if (getline(ss, extraField, ',')) {
+            cerr << "Skipping room with extra fields: " << line << endl;
+            continue;
+        }
+
+        // Validate room ID and location.
+        if (roomID.empty() || location.empty()) {
+            cerr << "Skipping room with missing required fields: "
+                 << line << endl;
+            continue;
+        }
+
+        // Validate room type.
+        RoomType type;
         if (type_str == "Classroom") {
             type = RoomType::CLASSROOM;
         }
@@ -92,28 +108,35 @@ vector<Room> FileHandler::loadRooms(const string& filename) {
             type = RoomType::STUDY_ROOM;
         }
         else {
-            type = RoomType::CLASSROOM;
-        }
-
-        int maxCapacity = 0;
-        if (roomID.empty() || !parseCapacity(maxCapacityText, maxCapacity)) {
-            cerr << "Skipping invalid room record: " << line << endl;
+            cerr << "Skipping room with unknown type: " << line << endl;
             continue;
         }
+
+        // Validate capacity.
+        int maxCapacity = 0;
+
+        if (!parseCapacity(maxCapacityText, maxCapacity)) {
+            cerr << "Skipping room with invalid capacity: " << line << endl;
+            continue;
+        }
+
+        // Validate availability.
+        if (availableText != "0" && availableText != "1") {
+            cerr << "Skipping room with invalid availability: "
+                 << line << endl;
+            continue;
+        }
+
         bool available = (availableText == "1");
 
-        Room room(
+        rooms.emplace_back(
             roomID,
             type,
             maxCapacity,
             location,
             available
         );
-
-        rooms.push_back(room);
     }
-
-    file.close();
 
     return rooms;
 }
@@ -154,14 +177,12 @@ bool FileHandler::saveRooms(
 
 bool FileHandler::loadUsers(
     const string& filename,
-    unordered_map<std::string, User*>& users
+    unordered_map<string, User*>& users
 ) {
     ifstream file(filename);
 
     if (!file.is_open()) {
-        std::cerr << "Error: could not open "
-                  << filename << endl;
-
+        cerr << "Error: could not open " << filename << endl;
         return false;
     }
 
@@ -171,69 +192,63 @@ bool FileHandler::loadUsers(
         if (!cleanLine(line)) {
             continue;
         }
+
         stringstream ss(line);
+        vector<string> fields;
+        string field;
 
-        string type;
-        string userID;
-        string name;
-        string email;
-        string extraInfo;
+        // Read all fields.
+        while (getline(ss, field, ',')) {
+            fields.push_back(field);
+        }
 
-        getline(ss, type, ',');
-        getline(ss, userID, ',');
-        getline(ss, name, ',');
-        getline(ss, email, ',');
-        getline(ss, extraInfo, ',');
+        // Exactly five fields are required.
+        if (fields.size() != 5) {
+            cerr << "Skipping invalid user record: "
+                 << line << endl;
+            continue;
+        }
 
-        // Keep the first record for an ID; creating a second would leak it.
+        const string& type = fields[0];
+        const string& userID = fields[1];
+        const string& name = fields[2];
+        const string& email = fields[3];
+        const string& extraInfo = fields[4];
+
+        // Validate required fields.
+        if (type.empty() || userID.empty() ||
+            name.empty() || email.empty() ||
+            extraInfo.empty()) {
+            cerr << "Skipping user with missing fields: "
+                 << line << endl;
+            continue;
+        }
+
+        // Keep the first record for duplicate IDs.
         if (users.count(userID) != 0) {
-            std::cerr << "Skipping duplicate user ID: " << userID << std::endl;
+            cerr << "Skipping duplicate user ID: "
+                 << userID << endl;
             continue;
         }
 
         User* user = nullptr;
 
         if (type == "Student") {
-
-            user = new Student(
-                userID,
-                name,
-                email,
-                extraInfo
-            );
+            user = new Student(userID, name, email, extraInfo);
         }
-
         else if (type == "Staff") {
-
-            user = new Staff(
-                userID,
-                name,
-                email,
-                extraInfo
-            );
+            user = new Staff(userID, name, email, extraInfo);
         }
-
         else if (type == "Admin") {
-            
-            user = new Admin(
-                userID,
-                name,
-                email,
-                extraInfo
-            );
+            user = new Admin(userID, name, email, extraInfo);
         }
-
         else {
-            std::cerr << "Unknown user type: "
-                      << type << std::endl;
-
+            cerr << "Unknown user type: " << type << endl;
             continue;
         }
 
         users[userID] = user;
     }
-
-    file.close();
 
     return true;
 }
