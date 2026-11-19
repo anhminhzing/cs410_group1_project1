@@ -10,6 +10,8 @@
 #include <algorithm>
 #include <limits>
 #include "FileHandler.h"
+#include <ctime>
+#include <sstream>
 
 #include "../include/Room.h"
 #include "../include/Reservation.h"
@@ -202,12 +204,12 @@ vector<Room> ReservationManagementSystem::getAvailableRooms(
 }
 
 string ReservationManagementSystem::timeFormat(std::chrono::system_clock::time_point tp) const {
-    time_t t = chrono::system_clock::to_time_t(tp);
+    time_t time = chrono::system_clock::to_time_t(tp);
     tm tmStruct{};
     #ifdef _WIN32
-    local_time_s(&tmStruct, &time);
+    localtime_s(&tmStruct, &time);
     #else
-    localtime_r(&t, &tmStruct);
+    localtime_r(&time, &tmStruct);
     #endif
 
     ostringstream oss;
