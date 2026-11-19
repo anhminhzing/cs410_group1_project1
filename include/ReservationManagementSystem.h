@@ -21,6 +21,8 @@ private:
 
     unordered_map<string, vector<string>> roomReservations;
 
+    string timeFormat(std::chrono::system_clock::time_point tp) const;
+
     size_t nextReservationId;
     string reservationFile;
     bool saveChanges(const unordered_map<string, Reservation>& updated) const;
@@ -48,6 +50,11 @@ public:
         chrono::system_clock::time_point reqStart,
         chrono::system_clock::time_point reqEnd
     );
+
+    void viewReservation(const string& resID) const;
+    void viewAllReservations() const;
+
+
 
 };
 #endif //CS410_GROUP1_RESERVATIONMANAGEMENTSYSTEM_H

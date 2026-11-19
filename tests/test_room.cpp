@@ -54,12 +54,11 @@ int main() {
     // ------------------------------------------------------------
     ReservationManagementSystem system;
     system.addRoom(room);
-    system.addRoom(
-        Room("R102", RoomType::STUDY_ROOM, 10, "Campus Center", true));
-    system.addRoom(
-        Room("R103", RoomType::MEETING_ROOM, 50, "Science Building", false));
-    const auto start =
-        chrono::system_clock::time_point(chrono::seconds(1800000000));
+    system.addRoom(Room("R102", RoomType::STUDY_ROOM, 10, "Campus Center", true));
+    system.addRoom(Room("R103", RoomType::MEETING_ROOM, 50, "Science Building", false));
+    // Relative to now so the test keeps working as real time passes.
+    const chrono::system_clock::time_point start =
+        chrono::time_point_cast<chrono::seconds>(chrono::system_clock::now()) + chrono::hours(24);
     const auto end = start + chrono::hours(1);
 
     // A 40-person search should return only R101.

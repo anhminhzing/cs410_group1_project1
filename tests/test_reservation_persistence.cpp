@@ -13,7 +13,9 @@ int main() {
     filesystem::create_directory(directory);
     const string path = (directory / "reservations.txt").string();
     const Room room("TEST", RoomType::CLASSROOM, 20, "Library", true);
-    const auto start = chrono::system_clock::time_point(chrono::seconds(1800000000));
+    // Whole seconds (the file format) and relative to now so it never becomes "past".
+    const chrono::system_clock::time_point start =
+        chrono::time_point_cast<chrono::seconds>(chrono::system_clock::now()) + chrono::hours(24);
     const auto end = start + chrono::hours(1);
 
     ReservationManagementSystem original;

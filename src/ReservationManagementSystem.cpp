@@ -111,6 +111,12 @@ bool ReservationManagementSystem::createReservation(const string roomID, const s
         return false;
     }
 
+    // Business rule: a reservation cannot start in the past.
+    if (startTime <= chrono::system_clock::now()) {
+        cout << "Reservations must start in the future." << endl;
+        return false;
+    }
+
     if (!isRoomAvailable(roomID, startTime, endTime)) {
         cout << "Room: " << roomID << " is unavailable at this time" << endl;
         return false;
@@ -193,4 +199,68 @@ vector<Room> ReservationManagementSystem::getAvailableRooms(
     }
 
     return availableRooms;
+}
+
+string ReservationManagementSystem::timeFormat(std::chrono::system_clock::time_point tp) const {
+    time_t t = chrono::system_clock::to_time_t(tp);
+    tm tmStruct{};
+    #ifdef _WIN32
+    local_time_s(&tmStruct, &time);
+    #else
+    localtime_r(&t, &tmStruct);
+    #endif
+
+    ostringstream oss;
+    oss << put_time(&tmStruct, "%Y-%m-%d %H:%M");
+    return oss.str();
+
+}
+
+void ReservationManagementSystem::viewReservation(const string &resID) const {
+    auto it = reservations.find(resID);
+    if (it == reservations.end()) {
+        cout << "Reservation '" << resID << "' not found." << endl;
+        return;
+    }
+
+    const Reservation& res = it->second;
+    string statusStr = (res.getStatus() == ReservationStatus::Cancelled) ? "Cancelled" : "Active";
+
+    cout << "\n========================================\n"
+         << " Reservation ID : " << res.getReservationID() << "\n"
+         << " Room ID        : " << res.getRoomID() << "\n"
+         << " User ID        : " << res.getOwnerID() << "\n"
+         << " Start Time     : " << timeFormat(res.getStartTime()) << "\n"
+         << " End Time       : " << timeFormat(res.getEndTime()) << "\n"
+         << " Status         : " << statusStr << "\n"
+         << "========================================\n" << endl;
+}
+
+void ReservationManagementSystem::viewAllReservations() const {
+    if (reservations.empty()) {
+        cout << "\nNo reservations found in the system.\n" << endl;
+        return;
+    }
+
+    cout << "\n" << left
+         << setw(12) << "Res ID"
+         << setw(10) << "Room ID"
+         << setw(12) << "User ID"
+         << setw(18) << "Start Time"
+         << setw(18) << "End Time"
+         << setw(10) << "Status" << "\n"
+         << string(80, '-') << "\n";
+
+    for (const auto& [id, res] : reservations) {
+        string statusStr = (res.getStatus() == ReservationStatus::Cancelled) ? "Cancelled" : "Active";
+
+        cout << left
+             << setw(12) << id
+             << setw(10) << res.getRoomID()
+             << setw(12) << res.getOwnerID()
+             << setw(18) << timeFormat(res.getStartTime())
+             << setw(18) << timeFormat(res.getEndTime())
+             << setw(10) << statusStr << "\n";
+    }
+    cout << string(80, '-') << "\n" << endl;
 }
